@@ -1,0 +1,44 @@
+# Loadbearing config — loadbearing/config@1
+#
+# Each probe is an oracle: a shell command plus the file globs whose changes it
+# observes. `loadbearing check` runs every probe once on HEAD (the baseline),
+# then reverts a cluster in a fresh worktree and reruns only the probes whose
+# globs match the cluster's files. A cluster whose probes all still pass is
+# reported droppable.
+#
+# Verdicts are scoped to mapped probes. A droppable badge means no mapped probe
+# regressed; it is not a claim that the code is dead or that a consumer in an
+# unprobed package would survive.
+schema: loadbearing/config@1
+
+probes:
+  - name: test
+    run: npm test
+    paths:
+      - src/**
+      - lib/**
+      - test/**
+      - tests/**
+
+  - name: typecheck
+    run: npm run typecheck
+    paths:
+      - src/**
+      - lib/**
+
+  - name: lint
+    run: npm run lint
+    paths:
+      - src/**
+      - lib/**
+      - test/**
+      - tests/**
+
+# Optional: run once per sandbox worktree before any probe. Use it when the
+# worktree needs its own dependencies (npm ci, pip install -e ., go mod download).
+# sandbox:
+#   setup: npm ci
+
+# Optional: per-probe timeout in seconds (default 120). A timeout is reported as
+# unverifiable:probe-error, never as a badge.
+# timeout: 120

@@ -6,8 +6,10 @@ import picomatch from "picomatch";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildClusters, mergeWithNextInFile } from "../src/cluster";
 import { normaliseDiffPath, parseDiff, readDiff } from "../src/diff";
+import { runCheck } from "../src/verdict";
 
 const repos: string[] = [];
+const FIXTURE = join(process.cwd(), "fixtures", "seed-agent-pr.sh");
 
 afterEach(() => {
   for (const repo of repos.splice(0)) rmSync(repo, { recursive: true, force: true });
@@ -183,6 +185,117 @@ describe("readDiff", () => {
     expect(deleted.hunks[0]).toMatchObject({ oldStart: 1, oldLines: 2, newStart: 0, newLines: 0 });
   });
 });
+
+describe("check", () => {
+  it(
+    "reverts each cluster and reports 3 necessary / 2 droppable / 1 no-probe",
+    async () => {
+      const repo = seedFixture();
+      const result = await runCheck({ cwd: repo, base: "HEAD~1" });
+
+      expect(result.exitCode).toBe(0);
+      const report = result.report!;
+      expect(report.schema).toBe("loadbearing/report@1");
+      expect(report.scope).toBe("mapped-probes-only");
+      expect(report.baseline.ok).toBe(true);
+      expect(report.summary).toEqual({ total: 6, necessary: 3, droppable: 2, unverifiable: 1 });
+
+      expect(report.clusters.map((cluster) => [cluster.id, cluster.verdict, cluster.reason])).toEqual([
+        ["cluster-1", "droppable", "probes-unaffected"],
+        ["cluster-2", "necessary", "probe-failed"],
+        ["cluster-3", "unverifiable", "no-probe"],
+        ["cluster-4", "necessary", "probe-failed"],
+        ["cluster-5", "necessary", "probe-failed"],
+        ["cluster-6", "droppable", "probes-unaffected"],
+      ]);
+
+      const noProbe = report.clusters.find((cluster) => cluster.id === "cluster-3")!;
+      expect(noProbe.files).toEqual(["src/extra.js"]);
+      expect(noProbe.probes).toEqual([]);
+
+      const necessary = report.clusters.find((cluster) => cluster.id === "cluster-2")!;
+      expect(necessary.hunkIds).toEqual(["src/app.js#2"]);
+      expect(necessary.probes).toHaveLength(1);
+      expect(necessary.probes[0]).toMatchObject({ name: "app", baselineExitCode: 0, revertedExitCode: 1 });
+      expect(necessary.probes[0]!.tail?.length).toBeGreaterThan(0);
+
+      // No sandbox worktree survives the run.
+      const worktrees = execFileSync("git", ["worktree", "list", "--porcelain"], { cwd: repo, encoding: "utf8" })
+        .split("\n")
+        .filter((line) => line.startsWith("worktree "));
+      expect(worktrees).toHaveLength(1);
+      expect(result.keptWorktrees).toEqual([]);
+    },
+    30_000,
+  );
+
+  it(
+    "marks clusters beyond --max-clusters unverifiable instead of judging them",
+    async () => {
+      const repo = seedFixture();
+      const result = await runCheck({ cwd: repo, base: "HEAD~1", maxClusters: 2 });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.report!.summary).toEqual({ total: 6, necessary: 1, droppable: 1, unverifiable: 4 });
+      expect(result.report!.clusters.filter((cluster) => cluster.reason === "skipped")).toHaveLength(3);
+      expect(result.report!.clusters.find((cluster) => cluster.id === "cluster-3")).toMatchObject({
+        reason: "no-probe",
+      });
+    },
+    30_000,
+  );
+
+  it(
+    "refuses a dirty tree with exit code 2",
+    async () => {
+      const repo = seedFixture();
+      writeFileSync(join(repo, "src/app.js"), "// uncommitted\n", { flag: "a" });
+
+      const result = await runCheck({ cwd: repo, base: "HEAD~1" });
+
+      expect(result.exitCode).toBe(2);
+      expect(result.report).toBeUndefined();
+      expect(result.error).toMatch(/dirty/i);
+    },
+    30_000,
+  );
+
+  it(
+    "exits 3 and marks mapped clusters baseline-failed when the baseline is red",
+    async () => {
+      const repo = seedFixture();
+      writeFileSync(join(repo, "test/core.js"), "'use strict';\nconsole.error('red baseline');\nprocess.exit(1);\n");
+      git(repo, ["add", "-A"]);
+      git(repo, ["commit", "-q", "--amend", "--no-edit"]);
+
+      const result = await runCheck({ cwd: repo, base: "HEAD~1" });
+
+      expect(result.exitCode).toBe(3);
+      const report = result.report!;
+      expect(report.baseline.ok).toBe(false);
+      expect(report.baseline.probes.find((probe) => probe.name === "core")).toMatchObject({ exitCode: 1 });
+
+      const mapped = report.clusters.filter((cluster) => cluster.files[0] !== "src/extra.js" && cluster.files[0] !== "test/core.js");
+      expect(mapped).toHaveLength(5);
+      for (const cluster of mapped) {
+        expect(cluster).toMatchObject({ verdict: "unverifiable", reason: "baseline-failed" });
+        expect(cluster.probes.length).toBeGreaterThan(0);
+      }
+      expect(report.clusters.find((cluster) => cluster.files[0] === "src/extra.js")).toMatchObject({
+        verdict: "unverifiable",
+        reason: "no-probe",
+      });
+    },
+    30_000,
+  );
+});
+
+function seedFixture(): string {
+  const repo = mkdtempSync(join(tmpdir(), "loadbearing-fixture-"));
+  repos.push(repo);
+  execFileSync("bash", [FIXTURE, repo], { stdio: "pipe" });
+  return repo;
+}
 
 describe("clusters", () => {
   it("merges a cluster with the next hunk in the same file", () => {
