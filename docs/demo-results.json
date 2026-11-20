@@ -1,0 +1,283 @@
+{
+  "schema": "loadbearing/demo-results@1",
+  "product": "Loadbearing",
+  "version": "0.1.0",
+  "package": "loadbearing-gate",
+  "recordedAt": "2026-11-20T22:35:30+00:00",
+  "environment": {
+    "node": "v22.23.1",
+    "platform": "macOS (darwin arm64)",
+    "shell": "bash"
+  },
+  "artifact": {
+    "kind": "npm pack tarball",
+    "file": "loadbearing-gate-0.1.0.tgz",
+    "note": "Same tarball the release workflow attaches to the GitHub Release."
+  },
+  "cast": {
+    "file": "docs/assets/demo.cast",
+    "format": "asciicast v2",
+    "driver": "docs/record-demo.sh"
+  },
+  "fixture": {
+    "script": "fixtures/seed-agent-pr.sh",
+    "directory": "/tmp/lb-demo",
+    "description": "Three files and six hunks: util.js (3 hunks), app.js (2 hunks), extra.js (1 hunk)."
+  },
+  "steps": [
+    {
+      "name": "diff",
+      "command": "npx --yes \"file:$OLDPWD/loadbearing-gate-0.1.0.tgz\" diff --base HEAD~1",
+      "exitCode": 0,
+      "stdout": "3 files, 6 hunks, 6 clusters against HEAD~1\n\nsrc/app.js#1  -7,7 +7,7\nsrc/app.js#2  -24,7 +24,7\nsrc/extra.js#1  -3,7 +3,7\nsrc/util.js#1  -6,7 +6,7\nsrc/util.js#2  -20,7 +20,7\nsrc/util.js#3  -36,4 +36,8\n"
+    },
+    {
+      "name": "check",
+      "command": "npx --yes \"file:$OLDPWD/loadbearing-gate-0.1.0.tgz\" check --base HEAD~1",
+      "exitCode": 0,
+      "stdout": "base HEAD~1  head 1c87c62  6 clusters\nscope mapped-probes-only: a verdict covers only the probes mapped to that cluster's files\nbaseline green (2 probes on HEAD)\n\ncluster-1  droppable     probes-unaffected  src/app.js#1\n    app   node test/app.js\n      baseline 0 -> reverted 0\ncluster-2  necessary     probe-failed       src/app.js#2\n    app exited 1 while reverted\n    app   node test/app.js\n      baseline 0 -> reverted 1\ncluster-3  unverifiable  no-probe           src/extra.js#1\n    no probe matches src/extra.js\ncluster-4  necessary     probe-failed       src/util.js#1\n    core exited 1 while reverted\n    core  node test/core.js\n      baseline 0 -> reverted 1\ncluster-5  necessary     probe-failed       src/util.js#2\n    core exited 1 while reverted\n    core  node test/core.js\n      baseline 0 -> reverted 1\ncluster-6  droppable     probes-unaffected  src/util.js#3\n    core  node test/core.js\n      baseline 0 -> reverted 0\n\n6 clusters: 3 necessary, 2 droppable, 1 unverifiable\n"
+    },
+    {
+      "name": "check-json",
+      "command": "npx --yes \"file:$OLDPWD/loadbearing-gate-0.1.0.tgz\" check --base HEAD~1 --json",
+      "exitCode": 0,
+      "stdout": "{\n  \"schema\": \"loadbearing/report@1\",\n  \"repo\": \"/private/tmp/lb-demo\",\n  \"base\": \"HEAD~1\",\n  \"head\": \"1c87c62f1fd30abe19100a0901acbf10ab873361\",\n  \"scope\": \"mapped-probes-only\",\n  \"generatedAt\": \"2026-11-20T22:35:30.142Z\",\n  \"probes\": [\n    {\n      \"name\": \"core\",\n      \"run\": \"node test/core.js\",\n      \"paths\": [\n        \"src/util.js\"\n      ]\n    },\n    {\n      \"name\": \"app\",\n      \"run\": \"node test/app.js\",\n      \"paths\": [\n        \"src/app.js\"\n      ]\n    }\n  ],\n  \"baseline\": {\n    \"ok\": true,\n    \"probes\": [\n      {\n        \"name\": \"core\",\n        \"run\": \"node test/core.js\",\n        \"exitCode\": 0,\n        \"timedOut\": false\n      },\n      {\n        \"name\": \"app\",\n        \"run\": \"node test/app.js\",\n        \"exitCode\": 0,\n        \"timedOut\": false\n      }\n    ]\n  },\n  \"clusters\": [\n    {\n      \"id\": \"cluster-1\",\n      \"hunkIds\": [\n        \"src/app.js#1\"\n      ],\n      \"files\": [\n        \"src/app.js\"\n      ],\n      \"verdict\": \"droppable\",\n      \"reason\": \"probes-unaffected\",\n      \"probes\": [\n        {\n          \"name\": \"app\",\n          \"run\": \"node test/app.js\",\n          \"baselineExitCode\": 0,\n          \"revertedExitCode\": 0\n        }\n      ]\n    },\n    {\n      \"id\": \"cluster-2\",\n      \"hunkIds\": [\n        \"src/app.js#2\"\n      ],\n      \"files\": [\n        \"src/app.js\"\n      ],\n      \"verdict\": \"necessary\",\n      \"reason\": \"probe-failed\",\n      \"detail\": \"app exited 1 while reverted\",\n      \"probes\": [\n        {\n          \"name\": \"app\",\n          \"run\": \"node test/app.js\",\n          \"baselineExitCode\": 0,\n          \"revertedExitCode\": 1,\n          \"tail\": [\n            \"-   5\",\n            \"  ]\",\n            \"\",\n            \"    at Object.<anonymous> (/private/var/folders/y6/1gqlrpy15xx2k5l_cksbsfd80000gn/T/loadbearing-wt-bexH1F/tree/test/app.js:7:8)\",\n            \"    at Module._compile (node:internal/modules/cjs/loader:1781:14)\",\n            \"    at Object..js (node:internal/modules/cjs/loader:1913:10)\",\n            \"    at Module.load (node:internal/modules/cjs/loader:1505:32)\",\n            \"    at Function._load (node:internal/modules/cjs/loader:1309:12)\",\n            \"    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\",\n            \"    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\",\n            \"    at node:internal/main/run_main_module:36:49 {\",\n            \"  generatedMessage: false,\",\n            \"  code: 'ERR_ASSERTION',\",\n            \"  actual: [ 2.8, 5.2 ],\",\n            \"  expected: [ 3, 5 ],\",\n            \"  operator: 'deepStrictEqual',\",\n            \"  diff: 'simple'\",\n            \"}\",\n            \"\",\n            \"Node.js v22.23.1\"\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": \"cluster-3\",\n      \"hunkIds\": [\n        \"src/extra.js#1\"\n      ],\n      \"files\": [\n        \"src/extra.js\"\n      ],\n      \"verdict\": \"unverifiable\",\n      \"reason\": \"no-probe\",\n      \"probes\": []\n    },\n    {\n      \"id\": \"cluster-4\",\n      \"hunkIds\": [\n        \"src/util.js#1\"\n      ],\n      \"files\": [\n        \"src/util.js\"\n      ],\n      \"verdict\": \"necessary\",\n      \"reason\": \"probe-failed\",\n      \"detail\": \"core exited 1 while reverted\",\n      \"probes\": [\n        {\n          \"name\": \"core\",\n          \"run\": \"node test/core.js\",\n          \"baselineExitCode\": 0,\n          \"revertedExitCode\": 1,\n          \"tail\": [\n            \"+ 'hi ada'\",\n            \"- 'hello ada'\",\n            \"\",\n            \"    at Object.<anonymous> (/private/var/folders/y6/1gqlrpy15xx2k5l_cksbsfd80000gn/T/loadbearing-wt-O1iweq/tree/test/core.js:6:8)\",\n            \"    at Module._compile (node:internal/modules/cjs/loader:1781:14)\",\n            \"    at Object..js (node:internal/modules/cjs/loader:1913:10)\",\n            \"    at Module.load (node:internal/modules/cjs/loader:1505:32)\",\n            \"    at Function._load (node:internal/modules/cjs/loader:1309:12)\",\n            \"    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\",\n            \"    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\",\n            \"    at node:internal/main/run_main_module:36:49 {\",\n            \"  generatedMessage: false,\",\n            \"  code: 'ERR_ASSERTION',\",\n            \"  actual: 'hi ada',\",\n            \"  expected: 'hello ada',\",\n            \"  operator: 'strictEqual',\",\n            \"  diff: 'simple'\",\n            \"}\",\n            \"\",\n            \"Node.js v22.23.1\"\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": \"cluster-5\",\n      \"hunkIds\": [\n        \"src/util.js#2\"\n      ],\n      \"files\": [\n        \"src/util.js\"\n      ],\n      \"verdict\": \"necessary\",\n      \"reason\": \"probe-failed\",\n      \"detail\": \"core exited 1 while reverted\",\n      \"probes\": [\n        {\n          \"name\": \"core\",\n          \"run\": \"node test/core.js\",\n          \"baselineExitCode\": 0,\n          \"revertedExitCode\": 1,\n          \"tail\": [\n            \"\",\n            \"'n=7' !== 'n:7'\",\n            \"\",\n            \"    at Object.<anonymous> (/private/var/folders/y6/1gqlrpy15xx2k5l_cksbsfd80000gn/T/loadbearing-wt-OCD0bu/tree/test/core.js:8:8)\",\n            \"    at Module._compile (node:internal/modules/cjs/loader:1781:14)\",\n            \"    at Object..js (node:internal/modules/cjs/loader:1913:10)\",\n            \"    at Module.load (node:internal/modules/cjs/loader:1505:32)\",\n            \"    at Function._load (node:internal/modules/cjs/loader:1309:12)\",\n            \"    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\",\n            \"    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\",\n            \"    at node:internal/main/run_main_module:36:49 {\",\n            \"  generatedMessage: false,\",\n            \"  code: 'ERR_ASSERTION',\",\n            \"  actual: 'n=7',\",\n            \"  expected: 'n:7',\",\n            \"  operator: 'strictEqual',\",\n            \"  diff: 'simple'\",\n            \"}\",\n            \"\",\n            \"Node.js v22.23.1\"\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": \"cluster-6\",\n      \"hunkIds\": [\n        \"src/util.js#3\"\n      ],\n      \"files\": [\n        \"src/util.js\"\n      ],\n      \"verdict\": \"droppable\",\n      \"reason\": \"probes-unaffected\",\n      \"probes\": [\n        {\n          \"name\": \"core\",\n          \"run\": \"node test/core.js\",\n          \"baselineExitCode\": 0,\n          \"revertedExitCode\": 0\n        }\n      ]\n    }\n  ],\n  \"summary\": {\n    \"total\": 6,\n    \"necessary\": 3,\n    \"droppable\": 2,\n    \"unverifiable\": 1\n  }\n}\n"
+    }
+  ],
+  "report": {
+    "schema": "loadbearing/report@1",
+    "repo": "/private/tmp/lb-demo",
+    "base": "HEAD~1",
+    "head": "1c87c62f1fd30abe19100a0901acbf10ab873361",
+    "scope": "mapped-probes-only",
+    "generatedAt": "2026-11-20T22:35:30.142Z",
+    "probes": [
+      {
+        "name": "core",
+        "run": "node test/core.js",
+        "paths": [
+          "src/util.js"
+        ]
+      },
+      {
+        "name": "app",
+        "run": "node test/app.js",
+        "paths": [
+          "src/app.js"
+        ]
+      }
+    ],
+    "baseline": {
+      "ok": true,
+      "probes": [
+        {
+          "name": "core",
+          "run": "node test/core.js",
+          "exitCode": 0,
+          "timedOut": false
+        },
+        {
+          "name": "app",
+          "run": "node test/app.js",
+          "exitCode": 0,
+          "timedOut": false
+        }
+      ]
+    },
+    "clusters": [
+      {
+        "id": "cluster-1",
+        "hunkIds": [
+          "src/app.js#1"
+        ],
+        "files": [
+          "src/app.js"
+        ],
+        "verdict": "droppable",
+        "reason": "probes-unaffected",
+        "probes": [
+          {
+            "name": "app",
+            "run": "node test/app.js",
+            "baselineExitCode": 0,
+            "revertedExitCode": 0
+          }
+        ]
+      },
+      {
+        "id": "cluster-2",
+        "hunkIds": [
+          "src/app.js#2"
+        ],
+        "files": [
+          "src/app.js"
+        ],
+        "verdict": "necessary",
+        "reason": "probe-failed",
+        "detail": "app exited 1 while reverted",
+        "probes": [
+          {
+            "name": "app",
+            "run": "node test/app.js",
+            "baselineExitCode": 0,
+            "revertedExitCode": 1,
+            "tail": [
+              "-   5",
+              "  ]",
+              "",
+              "    at Object.<anonymous> (/private/var/folders/y6/1gqlrpy15xx2k5l_cksbsfd80000gn/T/loadbearing-wt-bexH1F/tree/test/app.js:7:8)",
+              "    at Module._compile (node:internal/modules/cjs/loader:1781:14)",
+              "    at Object..js (node:internal/modules/cjs/loader:1913:10)",
+              "    at Module.load (node:internal/modules/cjs/loader:1505:32)",
+              "    at Function._load (node:internal/modules/cjs/loader:1309:12)",
+              "    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)",
+              "    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
+              "    at node:internal/main/run_main_module:36:49 {",
+              "  generatedMessage: false,",
+              "  code: 'ERR_ASSERTION',",
+              "  actual: [ 2.8, 5.2 ],",
+              "  expected: [ 3, 5 ],",
+              "  operator: 'deepStrictEqual',",
+              "  diff: 'simple'",
+              "}",
+              "",
+              "Node.js v22.23.1"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cluster-3",
+        "hunkIds": [
+          "src/extra.js#1"
+        ],
+        "files": [
+          "src/extra.js"
+        ],
+        "verdict": "unverifiable",
+        "reason": "no-probe",
+        "probes": []
+      },
+      {
+        "id": "cluster-4",
+        "hunkIds": [
+          "src/util.js#1"
+        ],
+        "files": [
+          "src/util.js"
+        ],
+        "verdict": "necessary",
+        "reason": "probe-failed",
+        "detail": "core exited 1 while reverted",
+        "probes": [
+          {
+            "name": "core",
+            "run": "node test/core.js",
+            "baselineExitCode": 0,
+            "revertedExitCode": 1,
+            "tail": [
+              "+ 'hi ada'",
+              "- 'hello ada'",
+              "",
+              "    at Object.<anonymous> (/private/var/folders/y6/1gqlrpy15xx2k5l_cksbsfd80000gn/T/loadbearing-wt-O1iweq/tree/test/core.js:6:8)",
+              "    at Module._compile (node:internal/modules/cjs/loader:1781:14)",
+              "    at Object..js (node:internal/modules/cjs/loader:1913:10)",
+              "    at Module.load (node:internal/modules/cjs/loader:1505:32)",
+              "    at Function._load (node:internal/modules/cjs/loader:1309:12)",
+              "    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)",
+              "    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
+              "    at node:internal/main/run_main_module:36:49 {",
+              "  generatedMessage: false,",
+              "  code: 'ERR_ASSERTION',",
+              "  actual: 'hi ada',",
+              "  expected: 'hello ada',",
+              "  operator: 'strictEqual',",
+              "  diff: 'simple'",
+              "}",
+              "",
+              "Node.js v22.23.1"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cluster-5",
+        "hunkIds": [
+          "src/util.js#2"
+        ],
+        "files": [
+          "src/util.js"
+        ],
+        "verdict": "necessary",
+        "reason": "probe-failed",
+        "detail": "core exited 1 while reverted",
+        "probes": [
+          {
+            "name": "core",
+            "run": "node test/core.js",
+            "baselineExitCode": 0,
+            "revertedExitCode": 1,
+            "tail": [
+              "",
+              "'n=7' !== 'n:7'",
+              "",
+              "    at Object.<anonymous> (/private/var/folders/y6/1gqlrpy15xx2k5l_cksbsfd80000gn/T/loadbearing-wt-OCD0bu/tree/test/core.js:8:8)",
+              "    at Module._compile (node:internal/modules/cjs/loader:1781:14)",
+              "    at Object..js (node:internal/modules/cjs/loader:1913:10)",
+              "    at Module.load (node:internal/modules/cjs/loader:1505:32)",
+              "    at Function._load (node:internal/modules/cjs/loader:1309:12)",
+              "    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)",
+              "    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
+              "    at node:internal/main/run_main_module:36:49 {",
+              "  generatedMessage: false,",
+              "  code: 'ERR_ASSERTION',",
+              "  actual: 'n=7',",
+              "  expected: 'n:7',",
+              "  operator: 'strictEqual',",
+              "  diff: 'simple'",
+              "}",
+              "",
+              "Node.js v22.23.1"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cluster-6",
+        "hunkIds": [
+          "src/util.js#3"
+        ],
+        "files": [
+          "src/util.js"
+        ],
+        "verdict": "droppable",
+        "reason": "probes-unaffected",
+        "probes": [
+          {
+            "name": "core",
+            "run": "node test/core.js",
+            "baselineExitCode": 0,
+            "revertedExitCode": 0
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "total": 6,
+      "necessary": 3,
+      "droppable": 2,
+      "unverifiable": 1
+    }
+  },
+  "summary": {
+    "total": 6,
+    "necessary": 3,
+    "droppable": 2,
+    "unverifiable": 1
+  },
+  "limitations": [
+    "Verdicts are scoped to mapped probes: droppable means no probe mapped to the cluster's files regressed, not that the code is dead.",
+    "Clusters are same-file only in 0.1; symbol references are not traced.",
+    "The fixture is synthetic and exists to exercise the pipeline, not to estimate how often real agent PRs contain droppable hunks."
+  ]
+}
