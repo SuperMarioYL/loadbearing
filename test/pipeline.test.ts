@@ -93,6 +93,23 @@ describe("parseDiff", () => {
     expect(files[0]!.hunks[0]!.id).toBe("src/gone.js#1");
     expect(files[0]!.hunks[0]).toMatchObject({ oldStart: 1, oldLines: 2, newStart: 0, newLines: 0 });
   });
+
+  it("marks submodule pointer changes as unsupported", () => {
+    const diff = [
+      "diff --git a/vendor/lib b/vendor/lib",
+      "index eaf356b..9ec3faf 160000",
+      "--- a/vendor/lib",
+      "+++ b/vendor/lib",
+      "@@ -1 +1 @@",
+      "-Subproject commit eaf356bf93e89e6d999c1e95c5e2677a3abed284",
+      "+Subproject commit 9ec3faf3fb7098e9f5f7527717c55c80dec96cae",
+      "",
+    ].join("\n");
+
+    const [hunk] = parseDiff(diff)[0]!.hunks;
+
+    expect(hunk).toMatchObject({ id: "vendor/lib#1", file: "vendor/lib", unsupported: "submodule" });
+  });
 });
 
 describe("normaliseDiffPath", () => {
@@ -285,6 +302,46 @@ describe("check", () => {
         verdict: "unverifiable",
         reason: "no-probe",
       });
+    },
+    30_000,
+  );
+
+  it(
+    "reports a submodule pointer change as unsupported instead of badging it",
+    async () => {
+      const subrepo = makeRepo({ "f.txt": "one\n" });
+      commit(subrepo, { "f.txt": "two\n" });
+
+      const repo = makeRepo({
+        "loadbearing.yml": [
+          "schema: loadbearing/config@1",
+          "probes:",
+          "  - name: sub",
+          '    run: node -e "process.exit(0)"',
+          "    paths:",
+          "      - vendor/lib",
+          "",
+        ].join("\n"),
+      });
+
+      git(repo, ["-c", "protocol.file.allow=always", "submodule", "add", "-q", subrepo, "vendor/lib"]);
+      git(repo, ["commit", "-q", "-m", "add submodule"]);
+      git(join(repo, "vendor/lib"), ["checkout", "-q", "HEAD~1"]);
+      git(repo, ["add", "vendor/lib"]);
+      git(repo, ["commit", "-q", "-m", "bump submodule"]);
+
+      const result = await runCheck({ cwd: repo, base: "HEAD~1" });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.report!.clusters).toHaveLength(1);
+      expect(result.report!.clusters[0]).toMatchObject({
+        id: "cluster-1",
+        files: ["vendor/lib"],
+        verdict: "unverifiable",
+        reason: "unsupported-diff",
+        probes: [],
+      });
+      expect(result.report!.clusters[0]!.detail).toMatch(/submodule/i);
     },
     30_000,
   );

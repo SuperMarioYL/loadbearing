@@ -4,6 +4,8 @@ export type Cluster = {
   id: string;
   hunkIds: string[];
   files: string[];
+  /** Copied from the hunk when v0.1 can list the diff but not judge it. */
+  unsupported?: string;
 };
 
 /** One cluster per hunk; v0.1 never clusters across files. */
@@ -12,6 +14,7 @@ export function buildClusters(hunks: readonly Hunk[]): Cluster[] {
     id: `cluster-${index + 1}`,
     hunkIds: [hunk.id],
     files: [hunk.file],
+    ...(hunk.unsupported === undefined ? {} : { unsupported: hunk.unsupported }),
   }));
 }
 
@@ -32,6 +35,7 @@ export function mergeWithNextInFile(clusters: readonly Cluster[], index: number)
     id: target.id,
     hunkIds: [...target.hunkIds, ...clusters[next]!.hunkIds],
     files: [...target.files],
+    ...(target.unsupported === undefined ? {} : { unsupported: target.unsupported }),
   };
 
   return clusters.flatMap((cluster, position) => {

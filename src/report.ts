@@ -119,9 +119,7 @@ export function formatReport(report: Report, options: { color?: boolean } = {}):
     );
 
     if (cluster.detail !== undefined) lines.push(`    ${cluster.detail}`);
-    if (cluster.probes.length === 0) {
-      lines.push(`    no probe matches ${cluster.files.join(", ")}`);
-    }
+    if (cluster.reason === "no-probe") lines.push(`    no probe matches ${cluster.files.join(", ")}`);
     for (const evidence of cluster.probes) {
       lines.push(
         `    ${evidence.name.padEnd(nameWidth)}  ${evidence.run}\n` +

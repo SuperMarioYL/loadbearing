@@ -9,6 +9,8 @@ export type Hunk = {
   newStart: number;
   newLines: number;
   patch: string;
+  /** Set for diffs v0.1 can list but not judge, e.g. a submodule pointer change. */
+  unsupported?: string;
 };
 
 /** One `diff --git` section of a text diff. */
@@ -56,7 +58,7 @@ export function parseDiff(text: string): DiffFile[] {
   const files: DiffFile[] = [];
   const lines = text.endsWith("\n") ? text.slice(0, -1).split("\n") : text.split("\n");
 
-  let section: { oldHeader?: string; newHeader?: string; hunks: PendingHunk[] } | null = null;
+  let section: { oldHeader?: string; newHeader?: string; submodule?: boolean; hunks: PendingHunk[] } | null = null;
   let hunk: PendingHunk | null = null;
 
   const finishHunk = (): void => {
@@ -88,6 +90,7 @@ export function parseDiff(text: string): DiffFile[] {
         newStart: parsed.newStart,
         newLines: parsed.newLines,
         patch: `${parsed.lines.join("\n")}\n`,
+        ...(current.submodule === true ? { unsupported: "submodule" } : {}),
       })),
     });
   };
@@ -99,6 +102,7 @@ export function parseDiff(text: string): DiffFile[] {
       continue;
     }
     if (section === null) continue;
+    if (isSubmoduleLine(line)) section.submodule = true;
 
     if (hunk !== null) {
       // A hunk body only ends at the next hunk header or the next file section.
@@ -153,6 +157,19 @@ type PendingHunk = {
   newLines: number;
   lines: string[];
 };
+
+/**
+ * A gitlink change is a submodule pointer bump, not file content. Its `+`/`-`
+ * lines say `Subproject commit <sha>`, so reversing it would only move the
+ * pointer; no probe in the parent repository can observe that.
+ */
+function isSubmoduleLine(line: string): boolean {
+  return (
+    /^(?:new file mode|deleted file mode|old mode|new mode) 160000$/.test(line) ||
+    /^index [0-9a-f]+\.\.[0-9a-f]+ 160000$/.test(line) ||
+    /^Subproject commit [0-9a-f]+$/.test(line)
+  );
+}
 
 /**
  * Decode git's C-style quoted token (`"b/src/x\\y file.js"`). Octal escapes are

@@ -159,6 +159,13 @@ async function judgeClusters(input: JudgeInput): Promise<void> {
 
   while (index < clusters.length) {
     const cluster = clusters[index]!;
+
+    if (cluster.unsupported !== undefined) {
+      reported.push(unsupportedReport(cluster));
+      index += 1;
+      continue;
+    }
+
     const mapped = probesForFiles(config.probes, cluster.files);
 
     if (mapped.length === 0) {
@@ -312,6 +319,8 @@ function classifyWithoutBaseline(
   probes: readonly Probe[],
   baselineRuns: readonly CommandRun[],
 ): ClusterReport {
+  if (cluster.unsupported !== undefined) return unsupportedReport(cluster);
+
   const mapped = probesForFiles(probes, cluster.files);
   if (mapped.length === 0) {
     return {
@@ -333,6 +342,18 @@ function classifyWithoutBaseline(
     reason: "baseline-failed",
     detail: "the baseline probes are red, so no badge is possible",
     probes: evidenceFor(mapped, baselineByName, []),
+  };
+}
+
+function unsupportedReport(cluster: Cluster): ClusterReport {
+  return {
+    id: cluster.id,
+    hunkIds: [...cluster.hunkIds],
+    files: [...cluster.files],
+    verdict: "unverifiable",
+    reason: "unsupported-diff",
+    detail: `${cluster.unsupported ?? "this"} diffs are not judged in v0.1`,
+    probes: [],
   };
 }
 
