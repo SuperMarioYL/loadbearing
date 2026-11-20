@@ -1,0 +1,54 @@
+{
+  "name": "loadbearing-gate",
+  "version": "0.1.0",
+  "description": "Revert-probe necessity gate for agent-authored pull requests",
+  "keywords": [
+    "code-review",
+    "coding-agents",
+    "diff",
+    "git",
+    "mcp",
+    "pull-request",
+    "testing"
+  ],
+  "license": "MIT",
+  "author": "SuperMarioYL",
+  "type": "module",
+  "bin": {
+    "loadbearing": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "loadbearing.example.yml"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SuperMarioYL/loadbearing.git"
+  },
+  "homepage": "https://github.com/SuperMarioYL/loadbearing#readme",
+  "bugs": {
+    "url": "https://github.com/SuperMarioYL/loadbearing/issues"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "commander": "^12.1.0",
+    "picomatch": "^4.0.2",
+    "yaml": "^2.5.1",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
