@@ -1,21 +1,43 @@
-import type { Hunk } from "./diff.js";
+import type { DiffFile, UnsupportedKind } from "./diff.js";
 
 export type Cluster = {
   id: string;
   hunkIds: string[];
   files: string[];
-  /** Copied from the hunk when v0.1 can list the diff but not judge it. */
-  unsupported?: string;
+  /** Set when v0.1 can list the diff but not judge it. */
+  unsupported?: UnsupportedKind;
 };
 
-/** One cluster per hunk; v0.1 never clusters across files. */
-export function buildClusters(hunks: readonly Hunk[]): Cluster[] {
-  return hunks.map((hunk, index) => ({
-    id: `cluster-${index + 1}`,
-    hunkIds: [hunk.id],
-    files: [hunk.file],
-    ...(hunk.unsupported === undefined ? {} : { unsupported: hunk.unsupported }),
-  }));
+/**
+ * Build clusters in diff order. A hunk-bearing section yields one cluster per
+ * hunk; an unsupported section yields a single marker cluster so the report
+ * never reads as clean when nothing could be judged. A merge commit makes the
+ * whole diff unjudgeable, so it yields one marker covering every listed file.
+ */
+export function buildDiffClusters(
+  files: readonly DiffFile[],
+  options: { mergeCommit?: boolean } = {},
+): Cluster[] {
+  if (options.mergeCommit === true) {
+    return [{ id: "cluster-1", hunkIds: [], files: files.map((file) => file.file), unsupported: "merge" }];
+  }
+
+  const clusters: Cluster[] = [];
+  for (const file of files) {
+    if (file.unsupported !== undefined) {
+      clusters.push({
+        id: `cluster-${clusters.length + 1}`,
+        hunkIds: [],
+        files: [file.file],
+        unsupported: file.unsupported,
+      });
+      continue;
+    }
+    for (const hunk of file.hunks) {
+      clusters.push({ id: `cluster-${clusters.length + 1}`, hunkIds: [hunk.id], files: [hunk.file] });
+    }
+  }
+  return clusters;
 }
 
 /**

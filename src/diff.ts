@@ -9,11 +9,12 @@ export type Hunk = {
   newStart: number;
   newLines: number;
   patch: string;
-  /** Set for diffs v0.1 can list but not judge, e.g. a submodule pointer change. */
-  unsupported?: string;
 };
 
-/** One `diff --git` section of a text diff. */
+/** A section v0.1 can list but cannot reverse-apply or judge. */
+export type UnsupportedKind = "rename" | "binary" | "submodule" | "mode" | "merge";
+
+/** One `diff --git` section. */
 export type DiffFile = {
   file: string;
   /** Raw `---` token, kept verbatim so a patch can be reassembled for `git apply`. */
@@ -21,6 +22,8 @@ export type DiffFile = {
   /** Raw `+++` token. */
   newHeader: string;
   hunks: Hunk[];
+  /** Set when the section has no hunk block that can be reversed and judged. */
+  unsupported?: Exclude<UnsupportedKind, "merge">;
 };
 
 const DEV_NULL = "/dev/null";
@@ -39,26 +42,34 @@ const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
  * then strip one prefix.
  */
 export function normaliseDiffPath(rawToken: string): string {
+  let token = decodePathToken(rawToken);
+  if (token.startsWith("a/") || token.startsWith("b/")) token = token.slice(2);
+  return token;
+}
+
+/** Strip one trailing TAB and un-quote; keeps the `a/`/`b/` prefix. */
+function decodePathToken(rawToken: string): string {
   let token = rawToken;
   if (token.endsWith("\t")) token = token.slice(0, -1);
   if (token.length >= 2 && token.startsWith('"') && token.endsWith('"')) {
     token = cUnquote(token);
   }
-  if (token.startsWith("a/") || token.startsWith("b/")) token = token.slice(2);
   return token;
 }
 
 /**
  * Parse `git -c core.quotePath=false diff` output into file sections.
  *
- * Sections without a `---`/`+++` pair (binary files, pure renames, mode-only
- * changes) and sections without hunks are skipped.
+ * Hunk-bearing sections become `DiffFile`s. Sections with no `---`/`+++` pair or
+ * no hunk block (binary files, pure renames, mode-only changes) cannot be
+ * reverse-applied and are kept as `unsupported` markers instead of being
+ * dropped, so a caller never mistakes an unjudgeable diff for an empty one.
  */
 export function parseDiff(text: string): DiffFile[] {
   const files: DiffFile[] = [];
   const lines = text.endsWith("\n") ? text.slice(0, -1).split("\n") : text.split("\n");
 
-  let section: { oldHeader?: string; newHeader?: string; submodule?: boolean; hunks: PendingHunk[] } | null = null;
+  let section: PendingSection | null = null;
   let hunk: PendingHunk | null = null;
 
   const finishHunk = (): void => {
@@ -70,7 +81,24 @@ export function parseDiff(text: string): DiffFile[] {
     finishHunk();
     const current = section;
     section = null;
-    if (current === null || current.oldHeader === undefined || current.newHeader === undefined) return;
+    if (current === null) return;
+
+    const unsupported = unsupportedKind(current);
+    if (unsupported !== undefined) {
+      const file = unsupportedPath(current);
+      if (file !== null && file !== "") {
+        files.push({
+          file,
+          oldHeader: current.oldHeader ?? "",
+          newHeader: current.newHeader ?? "",
+          hunks: [],
+          unsupported,
+        });
+      }
+      return;
+    }
+
+    if (current.oldHeader === undefined || current.newHeader === undefined) return;
     if (current.hunks.length === 0) return;
 
     // `+++ /dev/null` is a whole-file deletion: the real path is on `---`.
@@ -90,7 +118,6 @@ export function parseDiff(text: string): DiffFile[] {
         newStart: parsed.newStart,
         newLines: parsed.newLines,
         patch: `${parsed.lines.join("\n")}\n`,
-        ...(current.submodule === true ? { unsupported: "submodule" } : {}),
       })),
     });
   };
@@ -98,11 +125,14 @@ export function parseDiff(text: string): DiffFile[] {
   for (const line of lines) {
     if (line.startsWith("diff --git ")) {
       finishSection();
-      section = { hunks: [] };
+      section = { gitLine: line, hunks: [] };
       continue;
     }
     if (section === null) continue;
     if (isSubmoduleLine(line)) section.submodule = true;
+    if (line.startsWith("rename from ")) section.renameFrom = line.slice("rename from ".length);
+    if (line.startsWith("rename to ")) section.renameTo = line.slice("rename to ".length);
+    if (line.startsWith("Binary files ") || line === "GIT binary patch") section.binary = true;
 
     if (hunk !== null) {
       // A hunk body only ends at the next hunk header or the next file section.
@@ -157,6 +187,70 @@ type PendingHunk = {
   newLines: number;
   lines: string[];
 };
+
+type PendingSection = {
+  gitLine: string;
+  oldHeader?: string;
+  newHeader?: string;
+  hunks: PendingHunk[];
+  renameFrom?: string;
+  renameTo?: string;
+  binary?: boolean;
+  submodule?: boolean;
+};
+
+/**
+ * Classify a section the gate cannot judge. Priority matters: a submodule
+ * pointer bump has `---`/`+++` headers and a text hunk, but reversing it only
+ * moves the gitlink; a rename or binary file has no reverse-applicable hunk.
+ */
+function unsupportedKind(section: PendingSection): Exclude<UnsupportedKind, "merge"> | undefined {
+  if (section.submodule === true) return "submodule";
+  if (section.renameFrom !== undefined || section.renameTo !== undefined) return "rename";
+  if (section.binary === true) return "binary";
+  if (section.oldHeader === undefined && section.newHeader === undefined) return "mode";
+  return undefined;
+}
+
+/** Path for an unsupported section, preferring git's explicit rename target. */
+function unsupportedPath(section: PendingSection): string | null {
+  if (section.renameTo !== undefined) return decodePathToken(section.renameTo);
+  if (section.renameFrom !== undefined) return decodePathToken(section.renameFrom);
+  if (section.oldHeader !== undefined || section.newHeader !== undefined) {
+    const newPath = section.newHeader === undefined ? DEV_NULL : normaliseDiffPath(section.newHeader);
+    return newPath === DEV_NULL
+      ? section.oldHeader === undefined
+        ? null
+        : normaliseDiffPath(section.oldHeader)
+      : newPath;
+  }
+  return pathFromGitHeader(section.gitLine);
+}
+
+/**
+ * Recover a path from `diff --git a/<path> b/<path>`. The line is ambiguous when
+ * paths contain spaces, so prefer the split where both halves agree; renames
+ * and binary sections normally reach this through the equality case.
+ */
+function pathFromGitHeader(line: string): string | null {
+  const prefix = "diff --git ";
+  if (!line.startsWith(prefix)) return null;
+  const rest = line.slice(prefix.length);
+
+  const quoted = /^("(?:\\.|[^"\\])*") ("(?:\\.|[^"\\])*")$/.exec(rest);
+  if (quoted !== null) return normaliseDiffPath(quoted[2]!);
+
+  let fallback: string | null = null;
+  let index = rest.indexOf(" b/");
+  while (index !== -1) {
+    const left = normaliseDiffPath(rest.slice(0, index));
+    const right = normaliseDiffPath(rest.slice(index + 1));
+    if (left === right) return right;
+    fallback = right;
+    index = rest.indexOf(" b/", index + 1);
+  }
+  return fallback;
+}
 
 /**
  * A gitlink change is a submodule pointer bump, not file content. Its `+`/`-`

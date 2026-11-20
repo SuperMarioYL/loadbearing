@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import picomatch from "picomatch";
 import { afterEach, describe, expect, it } from "vitest";
-import { buildClusters, mergeWithNextInFile } from "../src/cluster";
+import { buildDiffClusters, mergeWithNextInFile } from "../src/cluster";
 import { normaliseDiffPath, parseDiff, readDiff } from "../src/diff";
 import { runCheck } from "../src/verdict";
 
@@ -52,7 +52,7 @@ describe("parseDiff", () => {
     expect(second!.patch).toBe("@@ -20 +21 @@\n-tail\n+TAIL\n");
   });
 
-  it("skips binary sections and keeps parsing after them", () => {
+  it("flags binary sections as unsupported and keeps parsing after them", () => {
     const diff = [
       "diff --git a/logo.png b/logo.png",
       "new file mode 100644",
@@ -70,8 +70,26 @@ describe("parseDiff", () => {
 
     const files = parseDiff(diff);
 
-    expect(files.map((file) => file.file)).toEqual(["src/keep.js"]);
-    expect(files[0]!.hunks[0]).toMatchObject({ oldLines: 1, newLines: 1 });
+    expect(files.map((file) => [file.file, file.unsupported])).toEqual([
+      ["logo.png", "binary"],
+      ["src/keep.js", undefined],
+    ]);
+    expect(files[1]!.hunks[0]).toMatchObject({ oldLines: 1, newLines: 1 });
+  });
+
+  it("flags pure rename sections as unsupported", () => {
+    const diff = [
+      "diff --git a/src/old.js b/src/new.js",
+      "similarity index 100%",
+      "rename from src/old.js",
+      "rename to src/new.js",
+      "",
+    ].join("\n");
+
+    const files = parseDiff(diff);
+
+    expect(files).toHaveLength(1);
+    expect(files[0]).toMatchObject({ file: "src/new.js", hunks: [], unsupported: "rename" });
   });
 
   it("takes the file from --- when +++ is /dev/null", () => {
@@ -106,9 +124,10 @@ describe("parseDiff", () => {
       "",
     ].join("\n");
 
-    const [hunk] = parseDiff(diff)[0]!.hunks;
+    const [file] = parseDiff(diff);
 
-    expect(hunk).toMatchObject({ id: "vendor/lib#1", file: "vendor/lib", unsupported: "submodule" });
+    expect(file).toMatchObject({ file: "vendor/lib", unsupported: "submodule" });
+    expect(file!.hunks).toEqual([]);
   });
 });
 
@@ -153,7 +172,7 @@ describe("readDiff", () => {
       "src/gamma.js#2",
     ]);
 
-    const clusters = buildClusters(hunks);
+    const clusters = buildDiffClusters(files);
     expect(clusters).toHaveLength(6);
     expect(clusters.every((cluster) => cluster.hunkIds.length === 1)).toBe(true);
   });
@@ -345,6 +364,80 @@ describe("check", () => {
     },
     30_000,
   );
+
+  it(
+    "reports a pure rename as unsupported instead of a clean diff",
+    async () => {
+      const repo = makeRepo({ "src/old.js": "one\n", "loadbearing.yml": configYaml(["src/**"]) });
+      git(repo, ["mv", "src/old.js", "src/new.js"]);
+      git(repo, ["commit", "-q", "-m", "rename"]);
+
+      const result = await runCheck({ cwd: repo, base: "HEAD~1" });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.report!.summary).toEqual({ total: 1, necessary: 0, droppable: 0, unverifiable: 1 });
+      expect(result.report!.clusters).toHaveLength(1);
+      expect(result.report!.clusters[0]).toMatchObject({
+        files: ["src/new.js"],
+        verdict: "unverifiable",
+        reason: "unsupported-diff",
+        probes: [],
+      });
+      expect(result.report!.clusters[0]!.detail).toMatch(/rename/i);
+    },
+    30_000,
+  );
+
+  it(
+    "reports a binary-only change as unsupported instead of a clean diff",
+    async () => {
+      const repo = makeRepo({ "src/a.txt": "x\n", "loadbearing.yml": configYaml(["src/**"]) });
+      writeFileSync(join(repo, "src/blob.bin"), Buffer.from([0, 1, 2, 3]));
+      git(repo, ["add", "-A"]);
+      git(repo, ["commit", "-q", "-m", "binary"]);
+
+      const result = await runCheck({ cwd: repo, base: "HEAD~1" });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.report!.summary).toEqual({ total: 1, necessary: 0, droppable: 0, unverifiable: 1 });
+      expect(result.report!.clusters[0]).toMatchObject({
+        files: ["src/blob.bin"],
+        verdict: "unverifiable",
+        reason: "unsupported-diff",
+        probes: [],
+      });
+      expect(result.report!.clusters[0]!.detail).toMatch(/binary/i);
+    },
+    30_000,
+  );
+
+  it(
+    "reports a merge commit as unsupported instead of judging its diff",
+    async () => {
+      const repo = makeRepo({ "src/app.js": "base\n", "loadbearing.yml": configYaml(["src/**"]) });
+      git(repo, ["checkout", "-q", "-b", "feature"]);
+      writeFiles(repo, { "src/feature.js": "feature\n" });
+      git(repo, ["add", "-A"]);
+      git(repo, ["commit", "-q", "-m", "feature"]);
+      git(repo, ["checkout", "-q", "-"]);
+      writeFiles(repo, { "src/main.js": "main\n" });
+      git(repo, ["add", "-A"]);
+      git(repo, ["commit", "-q", "-m", "main"]);
+      git(repo, ["merge", "-q", "--no-ff", "-m", "merge feature", "feature"]);
+
+      const result = await runCheck({ cwd: repo, base: "HEAD~1" });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.report!.summary).toEqual({ total: 1, necessary: 0, droppable: 0, unverifiable: 1 });
+      expect(result.report!.clusters).toHaveLength(1);
+      expect(result.report!.clusters[0]).toMatchObject({
+        verdict: "unverifiable",
+        reason: "unsupported-diff",
+      });
+      expect(result.report!.clusters[0]!.detail).toMatch(/merge/i);
+    },
+    30_000,
+  );
 });
 
 function seedFixture(): string {
@@ -369,7 +462,7 @@ describe("clusters", () => {
       "",
     ].join("\n");
 
-    const clusters = buildClusters(parseDiff(diff)[0]!.hunks);
+    const clusters = buildDiffClusters(parseDiff(diff));
     expect(clusters).toEqual([
       { id: "cluster-1", hunkIds: ["src/alpha.js#1"], files: ["src/alpha.js"] },
       { id: "cluster-2", hunkIds: ["src/alpha.js#2"], files: ["src/alpha.js"] },
@@ -380,6 +473,18 @@ describe("clusters", () => {
     expect(mergeWithNextInFile(merged!, 0)).toBeNull();
   });
 });
+
+function configYaml(paths: string[]): string {
+  return [
+    "schema: loadbearing/config@1",
+    "probes:",
+    "  - name: noop",
+    '    run: node -e "process.exit(0)"',
+    "    paths:",
+    ...paths.map((path) => `      - ${path}`),
+    "",
+  ].join("\n");
+}
 
 function makeRepo(files: Record<string, string>): string {
   const repo = mkdtempSync(join(tmpdir(), "loadbearing-test-"));

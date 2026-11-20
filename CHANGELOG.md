@@ -36,8 +36,10 @@ reports whether removing the cluster changed any probe outcome.
   2 droppable, and 1 unverifiable cluster.
 - The report states `scope: mapped-probes-only` and carries baseline and
   reverted exit codes for every mapped probe.
-- Submodule pointer changes are reported `unverifiable:unsupported-diff` instead
-  of being reverse-applied and badged on a probe that cannot observe them.
+- Submodule pointer changes, binary files, pure renames, and mode-only changes are
+  reported `unverifiable:unsupported-diff` instead of being dropped, and a merge
+  commit yields one `unsupported-diff` marker for the whole diff. An unjudgeable
+  diff never reads as clean.
 
 ### m3 — Expose the MCP tool
 
@@ -51,7 +53,8 @@ reports whether removing the cluster changed any probe outcome.
 
 ### m4 — Package, document, and demo
 
-- Published as the npm package `loadbearing-gate` with the `loadbearing` bin.
+- Packaged as `loadbearing-gate` (npm publish pending); 0.1.0 is installed from
+  the GitHub Release tarball or built from source.
 - Added `init`, which writes `loadbearing.yml` from existing `test`,
   `typecheck`, and `lint` scripts, plus `--help` on every command and a
   top-level `--version`.

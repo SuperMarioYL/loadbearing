@@ -27,7 +27,7 @@ removal changed no probe outcome. The reviewer stops auditing every line and
 starts clearing verdicts: bounce the droppable clusters, read the rest.
 
 ```console
-$ npx --yes loadbearing-gate@0.1.0 check --base HEAD~1
+$ loadbearing check --base HEAD~1
 ...
 6 clusters: 3 necessary, 2 droppable, 1 unverifiable
 ```
@@ -55,39 +55,40 @@ evidence: remove the cluster, rerun its probes, compare exit codes.
 ## See it work
 
 The bundled fixture is a deliberately agent-shaped PR: three files, six hunks,
-two probes that observe only some of those files. Run the packed CLI against it:
+two probes that observe only some of those files. Install the packed CLI (see
+[Installation](#installation)), then run it against the fixture:
 
 ```console
-$ npx --yes loadbearing-gate@0.1.0 check --base HEAD~1
+$ loadbearing check --base HEAD~1
 base HEAD~1  head 1c87c62  6 clusters
 scope mapped-probes-only: a verdict covers only the probes mapped to that cluster's files
 baseline green (2 probes on HEAD)
 
-cluster-1  droppable  probes-unaffected  src/app.js#1
-    app  node test/app.js
+cluster-1  droppable     probes-unaffected  src/app.js#1
+    app   node test/app.js
       baseline 0 -> reverted 0
-cluster-2  necessary  probe-failed  src/app.js#2
+cluster-2  necessary     probe-failed       src/app.js#2
     app exited 1 while reverted
-    app  node test/app.js
+    app   node test/app.js
       baseline 0 -> reverted 1
-cluster-3  unverifiable  no-probe  src/extra.js#1
+cluster-3  unverifiable  no-probe           src/extra.js#1
     no probe matches src/extra.js
-cluster-4  necessary  probe-failed  src/util.js#1
+cluster-4  necessary     probe-failed       src/util.js#1
     core exited 1 while reverted
     core  node test/core.js
       baseline 0 -> reverted 1
-cluster-5  necessary  probe-failed  src/util.js#2
+cluster-5  necessary     probe-failed       src/util.js#2
     core exited 1 while reverted
     core  node test/core.js
       baseline 0 -> reverted 1
-cluster-6  droppable  probes-unaffected  src/util.js#3
+cluster-6  droppable     probes-unaffected  src/util.js#3
     core  node test/core.js
       baseline 0 -> reverted 0
 
 6 clusters: 3 necessary, 2 droppable, 1 unverifiable
 ```
 
-The same run as JSON ends with:
+The report as JSON ends with:
 
 ```json
 "summary": { "total": 6, "necessary": 3, "droppable": 2, "unverifiable": 1 }
@@ -104,9 +105,9 @@ file maps to no probe, so it gets no badge instead of a guess.
 - Exact commands, captured stdout, and the full report:
   [`docs/demo-results.json`](./docs/demo-results.json).
 - Recording script: [`docs/record-demo.sh`](./docs/record-demo.sh).
-- The recording and the block above come from the same run of the packed 0.1.0
-  tarball. The only value that changes when you reseed the fixture is the short
-  `head` SHA.
+- The recording and the block above both run the packed 0.1.0 tarball against
+  the seeded fixture; `docs/demo-results.json` stores the exact stdout. The only
+  value that changes when you reseed the fixture is the short `head` SHA.
 
 ## How a verdict is made
 
@@ -154,18 +155,28 @@ removed, including after a failure.
 
 Requirements: Node 20 or newer, `git`, and macOS or Linux. Tested on Node 22.
 
-```console
-# one-off, no global install
-npx --yes loadbearing-gate@0.1.0 --version
+The 0.1.0 artifact ships as a GitHub Release tarball
+(`loadbearing-gate-0.1.0.tgz`). Install it directly, or build from source:
 
-# or install the `loadbearing` binary
-npm install -g loadbearing-gate@0.1.0
+```console
+# from the release tarball
+curl -LO https://github.com/SuperMarioYL/loadbearing/releases/download/v0.1.0/loadbearing-gate-0.1.0.tgz
+npm install -g ./loadbearing-gate-0.1.0.tgz
+loadbearing --version
+
+# or clone, build, and link the binary
+git clone https://github.com/SuperMarioYL/loadbearing.git
+cd loadbearing
+npm ci
+npm run build
+npm link
 loadbearing --version
 ```
 
-The npm package is `loadbearing-gate`; the binary is `loadbearing`. The short
+The package name is `loadbearing-gate`; the binary is `loadbearing`. The short
 package name belongs to an unrelated project, so the package name is scoped to
-avoid running the wrong tool.
+avoid running the wrong tool. The package is not on the npm registry yet: once
+published, `npm install -g loadbearing-gate@0.1.0` will work (see the roadmap).
 
 ## Quickstart
 
@@ -196,13 +207,17 @@ or `lint` scripts, and a branch to compare against.
 
 ```console
 cd your-project
-npx --yes loadbearing-gate@0.1.0 init
+loadbearing init
 ```
 
 `init` writes `loadbearing.yml` with one probe per script it found and broad
-default globs (`src/**`, `lib/**`, `test/**`, `tests/**`):
+default globs (`src/**`, `lib/**`, `test/**`, `tests/**`), applied to every
+probe. This is the exact file `init` writes for a `package.json` with `test`,
+`typecheck`, and `lint` scripts:
 
 ```yaml
+# Loadbearing probes: each command is an oracle for the file globs below.
+# A cluster is droppable only when every probe mapped to its files still passes.
 schema: loadbearing/config@1
 probes:
   - name: test
@@ -217,6 +232,8 @@ probes:
     paths:
       - src/**
       - lib/**
+      - test/**
+      - tests/**
   - name: lint
     run: npm run lint
     paths:
@@ -224,13 +241,17 @@ probes:
       - lib/**
       - test/**
       - tests/**
+
+# Run once per sandbox worktree before probes (uncomment when you have a lockfile):
+# sandbox:
+#   setup: npm ci
 ```
 
 Tighten `paths` until each probe covers the files whose breakage it can actually
 observe. Then run the gate against the branch point:
 
 ```console
-npx --yes loadbearing-gate@0.1.0 check --base origin/main
+loadbearing check --base origin/main
 ```
 
 Commit or stash local changes first: `check` exits 2 on a dirty tree, because a
@@ -250,7 +271,7 @@ loadbearing --version
 | Command | What it does |
 | --- | --- |
 | `init` | Writes a starter `loadbearing.yml` from `package.json` scripts. Refuses to overwrite an existing file. |
-| `diff` | Lists `file#n` hunk ids and one-hunk clusters for `<base>...HEAD`. `--json` emits `{base, files, clusters}`; this is an inventory, not a verdict report. |
+| `diff` | Lists `file#n` hunk ids and one-hunk clusters for `<base>...HEAD`. `--json` emits `{base, files, clusters}`; sections that cannot be judged carry an `unsupported` marker. This is an inventory, not a verdict report. |
 | `check` | Runs the baseline, reverts each cluster, runs mapped probes, prints the verdict table or the `loadbearing/report@1` JSON. |
 | `mcp` | Serves `loadbearing_check` over MCP stdio. Stdout carries protocol frames only. |
 
@@ -273,10 +294,10 @@ sandbox. The kept paths are printed to stderr.
 `content[0].text` and the same object in `structuredContent`. A bad base returns
 `isError: true` instead of crashing the server.
 
-Claude Code:
+Claude Code (requires the CLI installed, see [Installation](#installation)):
 
 ```console
-claude mcp add loadbearing -- npx --yes loadbearing-gate@0.1.0 mcp
+claude mcp add loadbearing -- loadbearing mcp
 ```
 
 Cursor (`~/.cursor/mcp.json` or `.cursor/mcp.json`):
@@ -285,8 +306,8 @@ Cursor (`~/.cursor/mcp.json` or `.cursor/mcp.json`):
 {
   "mcpServers": {
     "loadbearing": {
-      "command": "npx",
-      "args": ["--yes", "loadbearing-gate@0.1.0", "mcp"]
+      "command": "loadbearing",
+      "args": ["mcp"]
     }
   }
 }
@@ -399,9 +420,10 @@ Other limits in v0.1, stated rather than papered over:
   symbol references are never traced.
 - **No auto-fix.** Loadbearing reports; it never deletes hunks, pushes a commit,
   or edits the branch.
-- **Unsupported diffs.** Binary files and pure renames are skipped during parsing;
-  submodule pointer changes come back `unverifiable:unsupported-diff`. Merge
-  commits are diffed against their merge base, not judged as combined diffs.
+- **Unsupported diffs.** Binary files, pure renames, mode-only changes, and
+  submodule pointer changes are reported `unverifiable:unsupported-diff` instead
+  of being dropped; a merge commit yields one `unverifiable:unsupported-diff`
+  marker for the whole diff. An unjudgeable PR is never presented as clean.
 - **One run per state.** No retries, repeat runs, or flake detection. A flaky
   probe shows up as a flaky verdict.
 - **Sequential and bounded.** Cost is `clusters + 1` suite runs. `--timeout` and
@@ -436,7 +458,9 @@ Candidate work, not shipped in 0.1:
   keyed by cluster patch plus probe command.
 - Probe adapters for Jest, pytest, and `go test`, while keeping explicit globs
   as the source of truth.
-- Rename and binary support beyond skipping them.
+- Rename and binary support beyond reporting them as unverifiable.
+- Publishing `loadbearing-gate` to the npm registry; 0.1.0 currently ships as a
+  GitHub Release tarball.
 - Windows worktree support.
 
 The primitive stays the same: revert, run the mapped probes, report the

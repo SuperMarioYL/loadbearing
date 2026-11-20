@@ -1,4 +1,4 @@
-import { buildClusters, mergeWithNextInFile, type Cluster } from "./cluster.js";
+import { buildDiffClusters, mergeWithNextInFile, type Cluster } from "./cluster.js";
 import { readDiff, type DiffFile } from "./diff.js";
 import {
   failed,
@@ -28,6 +28,7 @@ import {
   createWorktree,
   dirtyEntries,
   gitText,
+  isMergeCommit,
   removeWorktree,
   repoRoot,
   resolveCommit,
@@ -88,7 +89,7 @@ export async function runCheck(options: CheckOptions): Promise<CheckResult> {
     return { exitCode: 2, error: `cannot read ${options.base}...HEAD: ${messageOf(error)}` };
   }
 
-  const clusters = buildClusters(files.flatMap((file) => file.hunks));
+  const clusters = buildDiffClusters(files, { mergeCommit: isMergeCommit(root, "HEAD") });
 
   const baselineRuns: CommandRun[] = [];
   for (const probe of config.probes) baselineRuns.push(await runProbe(probe, root, timeoutMs));
@@ -352,9 +353,16 @@ function unsupportedReport(cluster: Cluster): ClusterReport {
     files: [...cluster.files],
     verdict: "unverifiable",
     reason: "unsupported-diff",
-    detail: `${cluster.unsupported ?? "this"} diffs are not judged in v0.1`,
+    detail: unsupportedDetail(cluster.unsupported),
     probes: [],
   };
+}
+
+function unsupportedDetail(kind: string | undefined): string {
+  if (kind === "merge") {
+    return "merge commits are not judged in v0.1: a merge diff is not a combined diff, so no cluster can be reversed";
+  }
+  return `${kind ?? "this"} diffs are not judged in v0.1`;
 }
 
 function baselineEvidence(run: CommandRun): BaselineProbe {

@@ -62,6 +62,13 @@ export function resolveCommit(root: string, rev: string): string | null {
   return result.ok ? result.stdout.trim() : null;
 }
 
+/** True when `rev` resolves to a commit with more than one parent. */
+export function isMergeCommit(root: string, rev: string): boolean {
+  const result = gitTry(["rev-list", "--parents", "-n", "1", rev], root);
+  if (!result.ok) return false;
+  return result.stdout.trim().split(/\s+/).filter((token) => token !== "").length > 2;
+}
+
 /** Porcelain status entries; empty means the tree matches HEAD. */
 export function dirtyEntries(root: string): string[] {
   const result = gitTry(["status", "--porcelain", "--untracked-files=normal"], root);

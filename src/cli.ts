@@ -3,10 +3,11 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Command } from "commander";
 import { stringify } from "yaml";
-import { buildClusters } from "./cluster.js";
+import { buildDiffClusters } from "./cluster.js";
 import { readDiff, type DiffFile } from "./diff.js";
 import { CONFIG_SCHEMA, type Probe } from "./probes.js";
 import { formatReport, reportJson } from "./report.js";
+import { isMergeCommit } from "./sandbox.js";
 import { runCheck } from "./verdict.js";
 
 const VERSION = (JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string })
@@ -14,6 +15,15 @@ const VERSION = (JSON.parse(readFileSync(new URL("../package.json", import.meta.
 
 const DEFAULT_PATHS = ["src/**", "lib/**", "test/**", "tests/**"];
 const SCRIPT_PROBES = ["test", "typecheck", "lint"] as const;
+
+const CHECK_EXIT_CODES = [
+  "",
+  "Exit codes:",
+  "  0  a report was emitted (verdicts may still be unverifiable)",
+  "  1  config or flag error",
+  "  2  precondition failure: dirty tree, unknown base, no shared history, or not a git repository",
+  "  3  baseline failed; the report is still emitted",
+].join("\n");
 
 const program = new Command();
 
@@ -42,7 +52,8 @@ program
   .option("--max-clusters <n>", "judge at most n clusters; the rest stay unverifiable")
   .action(async (options: CheckCliOptions) => {
     process.exitCode = await runCheckCommand(options);
-  });
+  })
+  .addHelpText("after", CHECK_EXIT_CODES);
 
 program
   .command("init")
@@ -58,6 +69,11 @@ program
     const { serveMcp } = await import("./mcp.js");
     await serveMcp();
   });
+
+program.addHelpText(
+  "after",
+  "\nExit codes (check): 0 report emitted, 1 config or flag error, 2 precondition failure (dirty tree, unknown base), 3 baseline failed.",
+);
 
 await program.parseAsync();
 
@@ -174,15 +190,22 @@ function runDiff(base: string, json: boolean): number {
     return 2;
   }
 
+  const mergeCommit = isMergeCommit(process.cwd(), "HEAD");
   const hunks = files.flatMap((file) => file.hunks);
-  const clusters = buildClusters(hunks);
+  const unsupported = files.filter((file) => file.unsupported !== undefined);
+  const clusters = buildDiffClusters(files, { mergeCommit });
 
   if (json) {
     process.stdout.write(`${JSON.stringify({ base, files, clusters }, null, 2)}\n`);
     return 0;
   }
 
-  if (hunks.length === 0) {
+  if (mergeCommit) {
+    console.log(`HEAD is a merge commit; v0.1 does not judge merge diffs (${files.length} files listed).`);
+    return 0;
+  }
+
+  if (hunks.length === 0 && unsupported.length === 0) {
     console.log(`No hunks against ${base}.`);
     return 0;
   }
@@ -194,6 +217,9 @@ function runDiff(base: string, json: boolean): number {
   console.log();
   for (const hunk of hunks) {
     console.log(`${hunk.id}  -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines}`);
+  }
+  for (const file of unsupported) {
+    console.log(`${file.file}  unsupported (${file.unsupported})`);
   }
   return 0;
 }

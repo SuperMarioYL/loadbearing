@@ -128,8 +128,8 @@ One hunk cluster and the evidence for its badge.
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `id` | string | Stable cluster id, `cluster-<n>` in first-seen diff order. When a revert forces a same-file merge, the merged cluster keeps the first cluster's id. |
-| `hunkIds` | string[] | Hunk ids such as `src/app.js#2`. More than one after a merge. |
-| `files` | string[] | Normalised paths the cluster touches. One file in v0.1. |
+| `hunkIds` | string[] | Hunk ids such as `src/app.js#2`. More than one after a merge; empty for an `unsupported-diff` marker. |
+| `files` | string[] | Normalised paths the cluster touches. One file in v0.1, except a merge-commit marker, which lists every changed file. |
 | `verdict` | `"necessary"` \| `"droppable"` \| `"unverifiable"` | The badge. |
 | `reason` | `Reason` | Why the verdict was chosen; see the enum below. |
 | `detail` | string? | Human-readable cause, present for failures and skips. |
@@ -146,7 +146,7 @@ One hunk cluster and the evidence for its badge.
 | `unverifiable` | `revert-apply-failed` | `git apply -R` failed even after merging the next hunk in the same file. |
 | `unverifiable` | `probe-error` | A timeout, signal, spawn failure, or failed `sandbox.setup`. |
 | `unverifiable` | `skipped` | `--max-clusters` was reached before this cluster was judged. |
-| `unverifiable` | `unsupported-diff` | The diff can be listed but not judged. v0.1 emits this for submodule pointer changes, whose only content is `Subproject commit <sha>`. Binary files and pure renames are skipped during parsing. |
+| `unverifiable` | `unsupported-diff` | The diff can be listed but not reverse-applied or judged. v0.1 emits this for submodule pointer changes, binary files, pure renames, mode-only changes, and merge commits. |
 
 `droppable` is only emitted after a clean reverse apply and a green baseline. A
 red baseline never yields a badge.
@@ -184,8 +184,11 @@ red baseline never yields a badge.
 ## What this document does not cover
 
 - `loadbearing diff --json` emits `{ "base", "files", "clusters" }`, a hunk
-  inventory rather than a verdict report. It has no `schema` field.
+  inventory rather than a verdict report. It has no `schema` field. Sections
+  that cannot be judged appear in `files` with an `unsupported` marker and in
+  `clusters` with the same marker.
 - The MCP `structuredContent` is the same object as this report; the
   `content[0].text` copy is `JSON.stringify(report, null, 2)`.
 - File names, hunk offsets, and probe tails are strings copied from git and the
-  probes; the report does not normalise line endings inside `tail`.
+  probes. Each probe tail is the last 20 lines of combined stdout/stderr after
+  CRLF is normalised to LF, with trailing blank lines removed.

@@ -26,7 +26,7 @@ Request。它把每个 hunk 集群放进一次性的 `git worktree` 里反向应
 不必逐行审计，而是开始处理判定：把可丢弃的集群退回给智能体，只读剩下的部分。
 
 ```console
-$ npx --yes loadbearing-gate@0.1.0 check --base HEAD~1
+$ loadbearing check --base HEAD~1
 ...
 6 clusters: 3 necessary, 2 droppable, 1 unverifiable
 ```
@@ -51,39 +51,39 @@ Loadbearing 直接问这个反事实问题，并用执行证据回答：移除�
 ## 看它跑一次
 
 仓库自带的 fixture 是一个刻意做成「智能体风格」的 PR：三个文件、六个 hunk，两个探针
-只覆盖其中一部分文件。用打包好的 CLI 跑一次：
+只覆盖其中一部分文件。先安装打包好的 CLI（见[安装](#安装)），再对它运行：
 
 ```console
-$ npx --yes loadbearing-gate@0.1.0 check --base HEAD~1
+$ loadbearing check --base HEAD~1
 base HEAD~1  head 1c87c62  6 clusters
 scope mapped-probes-only: a verdict covers only the probes mapped to that cluster's files
 baseline green (2 probes on HEAD)
 
-cluster-1  droppable  probes-unaffected  src/app.js#1
-    app  node test/app.js
+cluster-1  droppable     probes-unaffected  src/app.js#1
+    app   node test/app.js
       baseline 0 -> reverted 0
-cluster-2  necessary  probe-failed  src/app.js#2
+cluster-2  necessary     probe-failed       src/app.js#2
     app exited 1 while reverted
-    app  node test/app.js
+    app   node test/app.js
       baseline 0 -> reverted 1
-cluster-3  unverifiable  no-probe  src/extra.js#1
+cluster-3  unverifiable  no-probe           src/extra.js#1
     no probe matches src/extra.js
-cluster-4  necessary  probe-failed  src/util.js#1
+cluster-4  necessary     probe-failed       src/util.js#1
     core exited 1 while reverted
     core  node test/core.js
       baseline 0 -> reverted 1
-cluster-5  necessary  probe-failed  src/util.js#2
+cluster-5  necessary     probe-failed       src/util.js#2
     core exited 1 while reverted
     core  node test/core.js
       baseline 0 -> reverted 1
-cluster-6  droppable  probes-unaffected  src/util.js#3
+cluster-6  droppable     probes-unaffected  src/util.js#3
     core  node test/core.js
       baseline 0 -> reverted 0
 
 6 clusters: 3 necessary, 2 droppable, 1 unverifiable
 ```
 
-同一次运行的 JSON 以这段结尾：
+报告的 JSON 以这段结尾：
 
 ```json
 "summary": { "total": 6, "necessary": 3, "droppable": 2, "unverifiable": 1 }
@@ -99,8 +99,9 @@ cluster-6  droppable  probes-unaffected  src/util.js#3
 - 完整命令、捕获的 stdout 和完整报告：
   [`docs/demo-results.json`](./docs/demo-results.json)。
 - 录制脚本：[`docs/record-demo.sh`](./docs/record-demo.sh)。
-- 录像和上面的输出来自同一次运行，用的是打包好的 0.1.0 tarball。重新生成 fixture
-  时，唯一会变化的是输出里的短 `head` SHA。
+- 录像和上面的输出来自同一个打包好的 0.1.0 tarball 和同一份 fixture；
+  `docs/demo-results.json` 保存了逐字节的 stdout。重新生成 fixture 时，唯一会变化的
+  是输出里的短 `head` SHA。
 
 ## 判定是怎么做出来的
 
@@ -143,17 +144,27 @@ cluster-6  droppable  probes-unaffected  src/util.js#3
 
 要求：Node 20 或更高、`git`、macOS 或 Linux。测试使用 Node 22。
 
-```console
-# 一次性运行，不装全局
-npx --yes loadbearing-gate@0.1.0 --version
+0.1.0 的产物是 GitHub Release 上的 tarball（`loadbearing-gate-0.1.0.tgz`）。
+直接安装它，或者从源码构建：
 
-# 或者安装 `loadbearing` 可执行文件
-npm install -g loadbearing-gate@0.1.0
+```console
+# 用 release tarball
+curl -LO https://github.com/SuperMarioYL/loadbearing/releases/download/v0.1.0/loadbearing-gate-0.1.0.tgz
+npm install -g ./loadbearing-gate-0.1.0.tgz
+loadbearing --version
+
+# 或者克隆、构建并链接可执行文件
+git clone https://github.com/SuperMarioYL/loadbearing.git
+cd loadbearing
+npm ci
+npm run build
+npm link
 loadbearing --version
 ```
 
-npm 包名是 `loadbearing-gate`，可执行文件名是 `loadbearing`。短包名已被另一个无关
-项目占用，所以包名做了区分，避免运行成别的工具。
+包名是 `loadbearing-gate`，可执行文件名是 `loadbearing`。短包名已被另一个无关项目
+占用，所以包名做了区分，避免运行成别的工具。这个包还没有发布到 npm registry；
+发布之后 `npm install -g loadbearing-gate@0.1.0` 才可用（见路线图）。
 
 ## 快速开始
 
@@ -183,13 +194,16 @@ npx --yes "file:$OLDPWD/loadbearing-gate-0.1.0.tgz" check --base HEAD~1
 
 ```console
 cd your-project
-npx --yes loadbearing-gate@0.1.0 init
+loadbearing init
 ```
 
-`init` 会为找到的每个脚本写一个探针，并给出较宽的默认 glob（`src/**`、`lib/**`、
-`test/**`、`tests/**`）：
+`init` 会为找到的每个脚本写一个探针，并给**每个**探针都加上较宽的默认 glob
+（`src/**`、`lib/**`、`test/**`、`tests/**`）。下面是 `init` 在带有 `test`、
+`typecheck`、`lint` 脚本的 `package.json` 上实际写出的文件：
 
 ```yaml
+# Loadbearing probes: each command is an oracle for the file globs below.
+# A cluster is droppable only when every probe mapped to its files still passes.
 schema: loadbearing/config@1
 probes:
   - name: test
@@ -204,6 +218,8 @@ probes:
     paths:
       - src/**
       - lib/**
+      - test/**
+      - tests/**
   - name: lint
     run: npm run lint
     paths:
@@ -211,12 +227,16 @@ probes:
       - lib/**
       - test/**
       - tests/**
+
+# Run once per sandbox worktree before probes (uncomment when you have a lockfile):
+# sandbox:
+#   setup: npm ci
 ```
 
 把 `paths` 收紧到每个探针真正能观察到破坏的范围，然后对分支起点运行：
 
 ```console
-npx --yes loadbearing-gate@0.1.0 check --base origin/main
+loadbearing check --base origin/main
 ```
 
 先提交或 stash 本地改动：工作区不干净时 `check` 会以 2 退出，因为只有 `HEAD` 与实际
@@ -236,7 +256,7 @@ loadbearing --version
 | 命令 | 作用 |
 | --- | --- |
 | `init` | 根据 `package.json` 脚本写出初始 `loadbearing.yml`；已存在时拒绝覆盖。 |
-| `diff` | 列出 `<base>...HEAD` 的 `file#n` hunk id 和单 hunk 集群。`--json` 输出 `{base, files, clusters}`，这是清单，不是判定报告。 |
+| `diff` | 列出 `<base>...HEAD` 的 `file#n` hunk id 和单 hunk 集群。`--json` 输出 `{base, files, clusters}`；无法判定的区段带 `unsupported` 标记。这是清单，不是判定报告。 |
 | `check` | 跑基线、逐个还原集群、运行映射探针，打印判定表或 `loadbearing/report@1` JSON。 |
 | `mcp` | 通过 MCP stdio 提供 `loadbearing_check`。stdout 只承载协议帧。 |
 
@@ -258,10 +278,10 @@ loadbearing --version
 `content[0].text`，同一个对象也在 `structuredContent`。base 不合法时返回
 `isError: true`，服务端不会崩溃。
 
-Claude Code：
+Claude Code（需要先安装 CLI，见[安装](#安装)）：
 
 ```console
-claude mcp add loadbearing -- npx --yes loadbearing-gate@0.1.0 mcp
+claude mcp add loadbearing -- loadbearing mcp
 ```
 
 Cursor（`~/.cursor/mcp.json` 或 `.cursor/mcp.json`）：
@@ -270,8 +290,8 @@ Cursor（`~/.cursor/mcp.json` 或 `.cursor/mcp.json`）：
 {
   "mcpServers": {
     "loadbearing": {
-      "command": "npx",
-      "args": ["--yes", "loadbearing-gate@0.1.0", "mcp"]
+      "command": "loadbearing",
+      "args": ["mcp"]
     }
   }
 }
@@ -376,9 +396,9 @@ glob 太宽会让探针多跑、变慢且更保守；glob 太窄会产生 `no-pr
 - **只在文件内合并。** 单个 hunk 无法反向应用时，会并入同文件的下一个 hunk。不跨文件
   聚类，也从不追踪符号引用。
 - **不自动修复。** Loadbearing 只报告；不删 hunk、不推提交、不改分支。
-- **不支持的 diff。** 二进制文件和纯重命名在解析时跳过；子模块指针变更返回
-  `unverifiable:unsupported-diff`。merge commit 会按其 merge base 做 diff，
-  而不是按 combined diff 判定。
+- **不支持的 diff。** 二进制文件、纯重命名、仅权限变更和子模块指针变更都会返回
+  `unverifiable:unsupported-diff`，而不是被丢弃；merge commit 会为整个 diff 生成一个
+  `unverifiable:unsupported-diff` 标记。无法判定的 PR 永远不会被当成干净的。
 - **每种状态只跑一次。** 没有重试、重复运行或 flaky 检测。探针不稳定，判定就不稳定。
 - **串行且有上限。** 成本是 `集群数 + 1` 次套件运行。`--timeout` 和 `--max-clusters`
   限制工作量，剩下的标为无法判定。
@@ -407,7 +427,8 @@ glob 太宽会让探针多跑、变慢且更保守；glob 太窄会产生 `no-pr
 - 跨文件聚类：处理那些必须一起应用或一起编译才成立的 hunk，并在报告里明确边界。
 - 有界 worker 池的并行集群执行，以及按「集群补丁 + 探针命令」缓存结果。
 - Jest、pytest、`go test` 的探针适配器，同时保留显式 glob 作为唯一事实来源。
-- 重命名和二进制支持，不再只是跳过。
+- 重命名和二进制支持，不再只是报告为无法判定。
+- 把 `loadbearing-gate` 发布到 npm registry；0.1.0 目前以 GitHub Release tarball 形式发布。
 - Windows worktree 支持。
 
 原语不变：还原，跑映射探针，报告反事实。
