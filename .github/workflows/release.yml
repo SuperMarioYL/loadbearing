@@ -1,0 +1,47 @@
+name: release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+
+      - name: Verify the tag matches VERSION
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          if [ "v$version" != "${GITHUB_REF_NAME}" ]; then
+            echo "tag ${GITHUB_REF_NAME} does not match VERSION ${version}" >&2
+            exit 1
+          fi
+
+      - name: Pack the npm tarball
+        run: npm pack
+
+      - name: Write checksums
+        run: sha256sum loadbearing-gate-*.tgz > checksums.txt
+
+      - name: Create or update the release and attach the tarball
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            loadbearing-gate-*.tgz
+            checksums.txt
+          generate_release_notes: true
+          fail_on_unmatched_files: true

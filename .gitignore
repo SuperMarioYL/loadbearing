@@ -5,6 +5,7 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+*.tgz
 
 # Logs and OS noise
 *.log
