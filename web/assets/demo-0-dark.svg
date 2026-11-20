@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="760" height="300" role="img" aria-labelledby="d0d-title d0d-desc" data-palette="e66556-e7b96a-f6acc0-51144c69107b">
+<title id="d0d-title">diff inventory of the bundled fixture</title>
+<desc id="d0d-desc">loadbearing diff --base HEAD~1 reports three files, six hunks and six clusters: src/app.js#1 and #2, src/extra.js#1, src/util.js#1, #2 and #3.</desc><style>
+text { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif; }
+.mono { font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; }
+@media (prefers-reduced-motion: reduce) { .dash, .pulse { animation: none !important; stroke-dashoffset: 0 !important; } }
+.dash { stroke-dasharray: 5 8; animation: dash 5.5s linear infinite; }
+.pulse { animation: pulse 6s ease-in-out infinite; }
+@keyframes dash { to { stroke-dashoffset: -52; } }
+@keyframes pulse { 0%,100% { opacity: .45 } 50% { opacity: 1 } }
+</style><defs>
+<radialGradient id="d0d-glow" cx="50%" cy="46%" r="58%">
+  <stop offset="0" stop-color="#e66556" stop-opacity="0.22"/>
+  <stop offset="0.55" stop-color="#e7b96a" stop-opacity="0.06"/>
+  <stop offset="1" stop-color="#0a070d" stop-opacity="0"/>
+</radialGradient>
+<pattern id="d0d-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+  <path d="M40 0H0V40" fill="none" stroke="#3a1c1d" stroke-width="1" opacity="0.5"/>
+</pattern>
+<marker id="d0d-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+  <path d="M0 0L10 5L0 10z" fill="#e66556"/>
+</marker>
+</defs>
+<rect width="760" height="300" fill="#0a070d"/>
+<rect width="760" height="300" fill="url(#d0d-grid)" opacity="0.45"/>
+<rect width="760" height="300" fill="url(#d0d-glow)"/>
+<text x="28" y="32" class="mono" font-size="9.5" letter-spacing="1.4" fill="#e66556">DIFF · HEAD~1...HEAD</text><text x="28" y="58" font-size="17" font-weight="700" fill="#fdeef2">3 files, 6 hunks, 6 clusters</text><text x="28" y="78" font-size="10" fill="#b29fa8">an inventory, not a verdict report</text><rect x="24" y="100" width="712" height="26" rx="6" fill="#131017" stroke="#3a1c1d" stroke-width="0.8"/><text x="38" y="118" class="mono" font-size="10" fill="#fdeef2">src/app.js#1</text><text x="214" y="118" class="mono" font-size="10" fill="#b29fa8">-7,7 +7,7</text><text x="392" y="118" class="mono" font-size="10" fill="#fdeef2">src/util.js#1</text><text x="568" y="118" class="mono" font-size="10" fill="#b29fa8">-6,7 +6,7</text><rect x="24" y="130" width="712" height="26" rx="6" fill="#131017" stroke="#3a1c1d" stroke-width="0.8"/><text x="38" y="148" class="mono" font-size="10" fill="#fdeef2">src/app.js#2</text><text x="214" y="148" class="mono" font-size="10" fill="#b29fa8">-24,7 +24,7</text><text x="392" y="148" class="mono" font-size="10" fill="#fdeef2">src/util.js#2</text><text x="568" y="148" class="mono" font-size="10" fill="#b29fa8">-20,7 +20,7</text><rect x="24" y="160" width="712" height="26" rx="6" fill="#131017" stroke="#3a1c1d" stroke-width="0.8"/><text x="38" y="178" class="mono" font-size="10" fill="#fdeef2">src/extra.js#1</text><text x="214" y="178" class="mono" font-size="10" fill="#b29fa8">-3,7 +3,7</text><text x="392" y="178" class="mono" font-size="10" fill="#fdeef2">src/util.js#3</text><text x="568" y="178" class="mono" font-size="10" fill="#b29fa8">-36,4 +36,8</text><text x="28" y="244" font-size="9.5" fill="#b29fa8">file#n hunk ids · one hunk per cluster in v0.1</text><text x="732" y="268" class="mono" font-size="10" text-anchor="end" fill="#63c98a">exit 0</text></svg>

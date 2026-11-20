@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 780" width="640" height="780" role="img" aria-labelledby="title desc" data-palette="e66556-e7b96a-f6acc0-51144c69107b">
+<title id="title">Loadbearing — revert-probe necessity gate</title>
+<desc id="desc">The Loadbearing wordmark above a structural frame with one removable beam.</desc>
+<style>
+text { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif; }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+
+
+.anim { animation-duration: 7s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+.drift { animation-name: drift; }
+.drift2 { animation-name: drift2; }
+.dash { animation: dash 3.2s linear infinite; }
+.fade { animation: fade 1s ease-out both; }
+.stage { animation: stage 7s ease-in-out infinite; }
+.beam-cut { animation: cut 5.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .anim, .dash, .fade, .stage, .beam-cut { animation: none !important; }
+}
+@keyframes drift { 0%,100% { transform: translate(0,0); opacity:.35 } 50% { transform: translate(7px,-13px); opacity:.95 } }
+@keyframes drift2 { 0%,100% { transform: translate(0,0); opacity:.25 } 50% { transform: translate(-6px,-9px); opacity:.8 } }
+@keyframes dash { to { stroke-dashoffset: -96; } }
+@keyframes fade { from { opacity:0; transform: translateY(8px) } to { opacity:1; transform: translateY(0) } }
+@keyframes stage { 0%,100% { opacity:.62 } 18%,42% { opacity:1 } }
+@keyframes cut { 0%,100% { opacity:.28 } 50% { opacity:.9 } }
+
+</style>
+<defs>
+  <radialGradient id="herodn-glow" cx="50%" cy="42%" r="58%">
+    <stop offset="0" stop-color="#e66556" stop-opacity="0.24"/>
+    <stop offset="0.55" stop-color="#e7b96a" stop-opacity="0.07"/>
+    <stop offset="1" stop-color="#0a070d" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="herodn-beam" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#e66556"/>
+    <stop offset="1" stop-color="#e7b96a"/>
+  </linearGradient>
+  <linearGradient id="herodn-fade" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#e66556" stop-opacity="0.9"/>
+    <stop offset="1" stop-color="#e66556" stop-opacity="0.15"/>
+  </linearGradient>
+  <pattern id="herodn-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M40 0H0V40" fill="none" stroke="#3a1c1d" stroke-width="1" opacity="0.55"/>
+  </pattern>
+  <pattern id="herodn-dots" width="24" height="24" patternUnits="userSpaceOnUse">
+    <circle cx="1.4" cy="1.4" r="1.1" fill="#b29fa8" opacity="0.28"/>
+  </pattern>
+  <marker id="herodn-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0 0L10 5L0 10z" fill="#e66556"/>
+  </marker>
+</defs><rect width="640" height="780" fill="#0a070d"/><rect width="640" height="780" fill="url(#herodn-grid)" opacity="0.55"/><rect width="640" height="780" fill="url(#herodn-glow)"/><text x="40" y="70" class="mono" font-size="11" letter-spacing="2.4" fill="#e66556">REVERT-PROBE NECESSITY GATE</text><text x="38" y="136" font-size="52" font-weight="700" fill="#fdeef2">LOAD<tspan fill="#e66556">BEARING</tspan></text><text x="40" y="184" font-size="20" fill="#fdeef2">Revert each hunk cluster.</text><text x="40" y="212" font-size="20" fill="#b29fa8">Run only its probes.</text><text x="40" y="240" font-size="20" fill="#b29fa8">Keep what <tspan fill="#e66556">carries the load</tspan>.</text><rect x="40" y="272" width="32" height="28" rx="14" fill="#131017" stroke="#3a1c1d"/><text x="56" y="291" class="mono" font-size="11.5" text-anchor="middle" fill="#b29fa8">CLI</text><rect x="106" y="272" width="77" height="28" rx="14" fill="#131017" stroke="#3a1c1d"/><text x="144" y="291" class="mono" font-size="11.5" text-anchor="middle" fill="#b29fa8">MCP stdio</text><rect x="232" y="272" width="69" height="28" rx="14" fill="#131017" stroke="#3a1c1d"/><text x="267" y="291" class="mono" font-size="11.5" text-anchor="middle" fill="#b29fa8">report@1</text><rect x="70" y="336" width="500" height="330" rx="14" fill="#131017" stroke="#3a1c1d"/><rect x="70" y="336" width="500" height="330" rx="14" fill="url(#herodn-dots)" opacity="0.45"/><text x="96" y="372" class="mono" font-size="11" letter-spacing="1.6" fill="#b29fa8">HEAD~1...HEAD · 6 CLUSTERS</text><rect x="200" y="396" width="10" height="220" rx="4" fill="url(#herodn-beam)"/><rect x="470" y="396" width="10" height="220" rx="4" fill="url(#herodn-beam)"/><rect x="180" y="606" width="320" height="9" rx="4" fill="#3a1c1d"/><rect x="210" y="426" width="260" height="9" rx="4" fill="#e66556" opacity="0.92"/><text x="492" y="434" class="mono" font-size="11" fill="#63c98a">necessary</text><rect x="210" y="496" width="260" height="9" rx="4" fill="none" stroke="#ff7a6b" stroke-width="1.5" stroke-dasharray="6 8" class="anim beam-cut"/><rect x="210" y="496" width="72" height="9" rx="4" fill="#ff7a6b" opacity="0.35"/><rect x="398" y="496" width="72" height="9" rx="4" fill="#ff7a6b" opacity="0.35"/><text x="492" y="504" class="mono" font-size="11" fill="#ff7a6b">droppable</text><rect x="210" y="566" width="260" height="9" rx="4" fill="#e66556" opacity="0.92"/><text x="492" y="574" class="mono" font-size="11" fill="#63c98a">necessary</text><text x="96" y="646" class="mono" font-size="10.5" fill="#b29fa8">reverting the dashed hunk changed no probe outcome</text><circle cx="96" cy="440" r="2.0" fill="#e7b96a" opacity="0.7" class="anim drift"/><circle cx="128" cy="520" r="2.6" fill="#e66556" opacity="0.7" class="anim drift2"/><circle cx="108" cy="590" r="3.2" fill="#e66556" opacity="0.7" class="anim drift"/><circle cx="548" cy="420" r="2.0" fill="#e7b96a" opacity="0.7" class="anim drift2"/><circle cx="566" cy="540" r="2.6" fill="#e66556" opacity="0.7" class="anim drift"/><circle cx="530" cy="612" r="3.2" fill="#e66556" opacity="0.7" class="anim drift2"/><text x="570" y="708" text-anchor="end" class="mono" font-size="10.5" fill="#b29fa8">loadbearing 0.1.0</text></svg>

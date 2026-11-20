@@ -1,0 +1,388 @@
+{
+  "schema": 3,
+  "name": "loadbearing",
+  "github": "https://github.com/SuperMarioYL/loadbearing",
+  "palette": "auto",
+  "host": "loadbearing.lei6393.com",
+  "lang": {
+    "primary": "en",
+    "toggle": true
+  },
+  "hero": {
+    "eyebrow": {
+      "en": "loadbearing · revert-probe necessity gate · reports, never edits",
+      "zh": "loadbearing · 还原探针必要性闸门 · 只报告，不改分支"
+    },
+    "headline": {
+      "en": "Revert the hunk.\nKeep what bears the load.",
+      "zh": "把 hunk 还原。\n只留下承重的部分。"
+    },
+    "sub": {
+      "en": "A free, open-source necessity gate for agent-authored pull requests. Loadbearing reverse-applies each hunk cluster in a throwaway git worktree, runs only the probes mapped to its files, and badges the clusters whose removal changed no probe outcome. One Node process, no model, no server.",
+      "zh": "面向编码智能体 PR 的免费开源必要性闸门。Loadbearing 把每个 hunk 集群放进一次性的 git worktree 反向应用，只运行映射到这些文件的探针，并给「还原后没有任何探针结果变化」的集群打标记。一个 Node 进程，没有模型，没有服务端。"
+    },
+    "href": "#quickstart",
+    "cta": {
+      "en": "Run it on the fixture",
+      "zh": "在自带 fixture 上跑一遍"
+    },
+    "ctaGithub": {
+      "en": "View on GitHub",
+      "zh": "在 GitHub 查看"
+    }
+  },
+  "advantages": [
+    {
+      "title": {
+        "en": "Ask the counterfactual, not for an opinion",
+        "zh": "直接问反事实，不要观点"
+      },
+      "body": {
+        "en": "Each hunk starts as its own cluster; a fresh detached worktree is created for it and only that cluster's verbatim blocks are reverse-applied with git apply -R. Then the mapped probes run again and the exit codes are compared with the pristine baseline. On the bundled fixture that is six clusters: three necessary, two droppable, one unverifiable. The droppable hunks are the point — reverting src/app.js#1 (Number() around an integer sum) and src/util.js#3 (a helper no mapped probe touches) left every probe at exit 0.",
+        "zh": "每个 hunk 起初都是独立集群；为它创建一次性的 detached worktree，只用 git apply -R 反向应用该集群的 hunk 原文块。随后重跑映射探针，把退出码与干净基线比较。自带 fixture 上是六个集群：三个必要、两个可丢弃、一个无法判定。重点正是那两个可丢弃项——还原 src/app.js#1（给整数求和套了一层 Number()）和 src/util.js#3（没有任何映射探针会碰到的辅助函数）之后，所有探针退出码仍是 0。"
+      },
+      "chips": ["git apply -R", "one worktree per cluster", "6 clusters → 3 / 2 / 1"]
+    },
+    {
+      "title": {
+        "en": "Only the probes that can see the hunk",
+        "zh": "只跑看得见这个 hunk 的探针"
+      },
+      "body": {
+        "en": "A probe maps to a cluster when any of its picomatch globs matches any of the cluster's files, and nothing else runs. The fixture's extra.js maps to no probe, so it gets unverifiable:no-probe instead of a guess. A droppable badge is emitted only after the reverse apply succeeds and every mapped probe still passes; if the baseline itself is red, the run exits 3 and no cluster receives a badge.",
+        "zh": "探针的任一 picomatch glob 匹配集群的任一文件，才算映射；其余探针不运行。fixture 里的 extra.js 没有映射任何探针，因此得到 unverifiable:no-probe，而不是猜测。只有反向应用成功、且所有映射探针仍然通过，才会给出可丢弃标记；如果基线本身就是红的，进程以 3 退出，任何集群都拿不到标记。"
+      },
+      "chips": ["picomatch globs", "no probe, no badge", "unverifiable:no-probe"]
+    },
+    {
+      "title": {
+        "en": "Your branch is never touched",
+        "zh": "永远不碰你的分支"
+      },
+      "body": {
+        "en": "The reverse apply happens inside a throwaway worktree, and every worktree is removed after its cluster — including after a failure. Loadbearing reports; it never deletes hunks, pushes a commit, or edits the branch. There is no model call, no server, no GitHub App and no hosted dashboard: the JSON is the integration surface. --keep-worktrees keeps one sandbox for inspection and prints the kept paths to stderr.",
+        "zh": "反向应用发生在一次性 worktree 里，每个 worktree 在该集群结束后删除——失败时也一样。Loadbearing 只报告；它不删 hunk、不推提交、不改分支。没有模型调用、没有服务端、没有 GitHub App，也没有托管看板：JSON 就是集成面。--keep-worktrees 会保留沙箱供检查，并把保留路径打印到 stderr。"
+      },
+      "chips": ["reports, never edits", "worktrees removed", "no model · no server"]
+    },
+    {
+      "title": {
+        "en": "One report for CI, the CLI and an agent",
+        "zh": "同一份报告给 CI、CLI 和智能体"
+      },
+      "body": {
+        "en": "check --json and the MCP tool emit the same loadbearing/report@1 document: baseline status, one entry per cluster with baseline and reverted exit codes, the last 20 lines of a failing probe, and a summary. Pipe it into CI and fail when summary.droppable > 0, or write it as a review artifact. Exit codes are 0 for a report, 1 for a config or flag error, 2 for a precondition failure, 3 for a red baseline — and --json changes only the format, never the code.",
+        "zh": "check --json 与 MCP 工具输出同一份 loadbearing/report@1：基线状态、每个集群的条目（含基线与还原后的退出码）、失败探针最后 20 行，以及汇总。接进 CI，在 summary.droppable > 0 时失败；或存成 review artifact。退出码：0 已输出报告，1 配置或参数错误，2 前置条件失败，3 基线失败——--json 只改输出格式，不改退出码。"
+      },
+      "chips": ["loadbearing/report@1", "exit 0 · 1 · 2 · 3", "MCP stdio"]
+    }
+  ],
+  "demo": {
+    "title": {
+      "en": "One recorded run",
+      "zh": "一次录制的运行"
+    },
+    "note": {
+      "en": "Recorded on 2026-11-20 against the bundled fixture — three files, six hunks — using the packed loadbearing-gate-0.1.0.tgz tarball, Node v22.23.1, macOS arm64. The commands and output below are copied from docs/demo-results.json. The fixture is synthetic: it exercises the pipeline, and it is not a benchmark of how often real agent PRs contain droppable hunks. Reseeding the fixture changes only the short head SHA.",
+      "zh": "录制于 2026-11-20，针对仓库自带的 fixture（三个文件、六个 hunk），使用打包好的 loadbearing-gate-0.1.0.tgz，Node v22.23.1，macOS arm64。下面的命令与输出逐字来自 docs/demo-results.json。fixture 是合成的：它用于验证整条流程，不代表真实智能体 PR 中可丢弃 hunk 的出现频率。重新生成 fixture 时，唯一变化的只是输出里的短 head SHA。"
+    },
+    "source": "https://github.com/SuperMarioYL/loadbearing/blob/main/docs/demo-results.json",
+    "steps": [
+      {
+        "label": {
+          "en": "Inventory the diff",
+          "zh": "先看清单"
+        },
+        "body": {
+          "en": "diff lists the hunks and one-hunk clusters for <base>...HEAD. Here that is three files, six hunks and six clusters against HEAD~1, with file#n ids and their line ranges. It is an inventory, not a verdict report.",
+          "zh": "diff 列出 <base>...HEAD 的 hunk 和单 hunk 集群。这里是相对 HEAD~1 的三个文件、六个 hunk、六个集群，带 file#n 编号和行范围。它是清单，不是判定报告。"
+        },
+        "image": "/assets/demo-0-light.svg",
+        "imageDark": "/assets/demo-0-dark.svg",
+        "command": "npx --yes \"file:$OLDPWD/loadbearing-gate-0.1.0.tgz\" diff --base HEAD~1",
+        "output": "3 files, 6 hunks, 6 clusters against HEAD~1\n\nsrc/app.js#1  -7,7 +7,7\nsrc/app.js#2  -24,7 +24,7\nsrc/extra.js#1  -3,7 +3,7\nsrc/util.js#1  -6,7 +6,7\nsrc/util.js#2  -20,7 +20,7\nsrc/util.js#3  -36,4 +36,8"
+      },
+      {
+        "label": {
+          "en": "Revert and judge",
+          "zh": "逐个还原判定"
+        },
+        "body": {
+          "en": "The baseline is green — two probes on HEAD — so badges become possible. app maps to src/app.js and core maps to src/util.js; nothing maps src/extra.js, which stays unverifiable. src/app.js#2 pins rounding, so its probe exits 1 while reverted. The two droppable rows are src/app.js#1 and src/util.js#3: reverting either changed no probe outcome.",
+          "zh": "基线是绿的——HEAD 上两个探针——因此才可能给出标记。app 映射到 src/app.js，core 映射到 src/util.js；没有任何探针映射 src/extra.js，它保持无法判定。src/app.js#2 锁定了四舍五入，还原后探针以 1 退出。两行可丢弃是 src/app.js#1 和 src/util.js#3：还原任何一个，探针结果都没有变化。"
+        },
+        "image": "/assets/demo-1-light.svg",
+        "imageDark": "/assets/demo-1-dark.svg",
+        "command": "npx --yes \"file:$OLDPWD/loadbearing-gate-0.1.0.tgz\" check --base HEAD~1",
+        "output": "base HEAD~1  head 1c87c62  6 clusters\nscope mapped-probes-only: a verdict covers only the probes mapped to that cluster's files\nbaseline green (2 probes on HEAD)\n\ncluster-1  droppable     probes-unaffected  src/app.js#1\n    app   node test/app.js\n      baseline 0 -> reverted 0\ncluster-2  necessary     probe-failed       src/app.js#2\n    app exited 1 while reverted\n    app   node test/app.js\n      baseline 0 -> reverted 1\ncluster-3  unverifiable  no-probe           src/extra.js#1\n    no probe matches src/extra.js\ncluster-4  necessary     probe-failed       src/util.js#1\n    core exited 1 while reverted\n    core  node test/core.js\n      baseline 0 -> reverted 1\ncluster-5  necessary     probe-failed       src/util.js#2\n    core exited 1 while reverted\n    core  node test/core.js\n      baseline 0 -> reverted 1\ncluster-6  droppable     probes-unaffected  src/util.js#3\n    core  node test/core.js\n      baseline 0 -> reverted 0\n\n6 clusters: 3 necessary, 2 droppable, 1 unverifiable"
+      },
+      {
+        "label": {
+          "en": "The JSON a gate reads",
+          "zh": "给闸门读的 JSON"
+        },
+        "body": {
+          "en": "The same run with --json emits loadbearing/report@1. Besides the per-cluster entries and probe tails, it records scope: mapped-probes-only and the same summary; the exit code stays 0 because a report was emitted. The full document also carries the baseline probe list and the last 20 lines of each failing probe — the recorded run ends with:",
+          "zh": "同一次运行加上 --json，输出 loadbearing/report@1。除每个集群的条目和探针输出尾部外，它记录 scope: mapped-probes-only 和同样的汇总；因为已经输出报告，退出码仍是 0。完整文档还包含基线探针列表和每个失败探针的最后 20 行——录制输出的结尾是："
+        },
+        "image": "/assets/demo-2-light.svg",
+        "imageDark": "/assets/demo-2-dark.svg",
+        "command": "npx --yes \"file:$OLDPWD/loadbearing-gate-0.1.0.tgz\" check --base HEAD~1 --json",
+        "output": "    }\n  ],\n  \"summary\": {\n    \"total\": 6,\n    \"necessary\": 3,\n    \"droppable\": 2,\n    \"unverifiable\": 1\n  }\n}"
+      }
+    ]
+  },
+  "quickstart": {
+    "title": {
+      "en": "Your first run",
+      "zh": "第一次跑通"
+    },
+    "body": {
+      "en": "Requirements: Node 20 or newer, git, and macOS or Linux (tested on Node 22). The 0.1.0 artifact ships as a GitHub Release tarball; the package is named loadbearing-gate and the binary is loadbearing. The package is not on the npm registry yet. The fixture commands below need no config file and no corpus.",
+      "zh": "要求：Node 20 或更高、git、macOS 或 Linux（在 Node 22 上测试）。0.1.0 的产物是 GitHub Release 上的 tarball；包名是 loadbearing-gate，可执行文件名是 loadbearing。这个包还没有发布到 npm registry。下面的 fixture 命令不需要配置文件，也不需要语料。"
+    },
+    "steps": [
+      {
+        "title": {
+          "en": "Install the release tarball",
+          "zh": "安装 release tarball"
+        },
+        "code": "curl -LO https://github.com/SuperMarioYL/loadbearing/releases/download/v0.1.0/loadbearing-gate-0.1.0.tgz\nnpm install -g ./loadbearing-gate-0.1.0.tgz\nloadbearing --version"
+      },
+      {
+        "title": {
+          "en": "Or clone, build and link",
+          "zh": "或者克隆、构建并链接"
+        },
+        "code": "git clone https://github.com/SuperMarioYL/loadbearing.git\ncd loadbearing\nnpm ci\nnpm run build\nnpm link\nloadbearing --version"
+      },
+      {
+        "title": {
+          "en": "Try the bundled fixture (no config needed)",
+          "zh": "跑自带 fixture（不需要配置）"
+        },
+        "code": "git clone https://github.com/SuperMarioYL/loadbearing.git\ncd loadbearing\nnpm ci\nnpm run build\nnpm pack\nbash fixtures/seed-agent-pr.sh /tmp/lb-demo\ncd /tmp/lb-demo\nnpx --yes \"file:$OLDPWD/loadbearing-gate-0.1.0.tgz\" check --base HEAD~1"
+      },
+      {
+        "title": {
+          "en": "Write the starter config",
+          "zh": "写出初始配置"
+        },
+        "code": "cd your-project\nloadbearing init"
+      },
+      {
+        "title": {
+          "en": "Run against the branch point",
+          "zh": "对分支起点运行"
+        },
+        "code": "loadbearing check --base origin/main"
+      },
+      {
+        "title": {
+          "en": "Expose it over MCP",
+          "zh": "通过 MCP 暴露给客户端"
+        },
+        "code": "{\n  \"mcpServers\": {\n    \"loadbearing\": {\n      \"command\": \"loadbearing\",\n      \"args\": [\"mcp\"]\n    }\n  }\n}"
+      }
+    ]
+  },
+  "scene": {
+    "kind": "neon-graph",
+    "fallback": "/assets/scene-dark.svg",
+    "fallbackLight": "/assets/scene-light.svg",
+    "caption": {
+      "en": "An illustrative particle graph: a six-hunk diff splits into clusters, each cluster is reverted in its own worktree, its mapped probes run, and the exit codes converge into one report. Exact counts and recorded output are in the demo below.",
+      "zh": "首屏是示意粒子图：六个 hunk 的 diff 拆成集群，每个集群在独立 worktree 中还原，只跑映射的探针，最后退出码汇成一份报告。真实计数与录制输出在下面的 Demo 里。"
+    }
+  },
+  "story": {
+    "intro": {
+      "title": {
+        "en": "Correctness is visible. Necessity is not.",
+        "zh": "正确性看得见，必要性看不见。"
+      },
+      "body": {
+        "en": "A coding agent opens a pull request with six hunks across three files. You can read every line for correctness, approve most of it, and still not know which lines were needed. The expensive question is the counterfactual: what happens if this hunk disappears? For most hunks, nobody runs that experiment. Prompt-level minimality skills bias the agent before it writes; patch coverage reports that a line executed; an LLM critic gives an opinion you still have to verify; mutation testing scores the suite against generated mutants. Loadbearing asks the counterfactual directly and answers it with execution evidence — revert the cluster, run its mapped probes, compare exit codes.",
+        "zh": "编码智能体提交一个 PR：三个文件、六个 hunk。你可以逐行审查正确性，批准其中大部分，却仍然不知道哪些行是必需的。真正昂贵的问题是那个反事实：如果这个 hunk 消失，会发生什么？对大多数 hunk 来说，没有人真的做过这个实验。提示词层面的「少写」技能在动笔前施加偏好；补丁覆盖率只说明某一行被执行过；让 LLM 评论 diff，得到的观点仍要你亲自验证；变异测试评分的是测试套件对生成变异的充分性。Loadbearing 直接问这个反事实，并用执行证据回答：还原集群，跑映射的探针，比较退出码。"
+      }
+    },
+    "sections": [
+      {
+        "title": {
+          "en": "Five rules, and the order matters",
+          "zh": "五条规则，先后本身就是规则"
+        },
+        "body": {
+          "en": "Baseline first: every configured probe runs once on pristine HEAD, and one failure makes the run exit 3 with mapped clusters marked unverifiable:baseline-failed — a red baseline never yields a badge. Then one cluster at a time in a fresh detached worktree, reverse-applying only that cluster's verbatim hunk blocks. If git apply -R fails, the next hunk in the same file is merged in and the apply is retried; if the file still fails, the cluster is unverifiable:revert-apply-failed. Only probes whose globs match the cluster's files run: a probe that passed at baseline and fails while reverted makes the cluster necessary, and every mapped probe passing makes it droppable. No matching probe is no-probe; a timeout, signal, spawn failure or failed sandbox.setup is probe-error. The cost is one baseline suite plus one run per judged cluster, sequentially.",
+          "zh": "先跑基线：每个配置好的探针在干净的 HEAD 上跑一次，任何一个失败都会让进程以 3 退出，有探针映射的集群标记为 unverifiable:baseline-failed——红的基线永远不产生标记。然后一次一个集群，在全新的 detached worktree 里只反向应用该集群的 hunk 原文块。git apply -R 失败时，把同一文件的下一个 hunk 并入当前集群重试；整个文件仍然失败则是 unverifiable:revert-apply-failed。只运行 glob 匹配集群文件的探针：基线通过、还原后失败的探针让集群成为 necessary；所有映射探针仍然通过则是 droppable。没有匹配探针是 no-probe；超时、信号、进程启动失败或 sandbox.setup 失败是 probe-error。成本是一次基线套件，加上每个被判定集群一次运行，串行执行。"
+        },
+        "image": {
+          "light": "/assets/process-light.svg",
+          "dark": "/assets/process-dark.svg",
+          "alt": {
+            "en": "Five ordered stages from a pristine baseline to a per-cluster badge, then the fixture's six clusters: three necessary, two droppable, one unverifiable.",
+            "zh": "从干净基线到逐集群标记的五个有序阶段，以及 fixture 的六个集群：三个必要、两个可丢弃、一个无法判定。"
+          },
+          "mobile": {
+            "light": "/assets/process-mobile-light.svg",
+            "dark": "/assets/process-mobile-dark.svg"
+          }
+        }
+      },
+      {
+        "title": {
+          "en": "Seven modules, one process",
+          "zh": "七个模块，一个进程"
+        },
+        "body": {
+          "en": "cli.ts is the command layer: it resolves flags and owns the exit codes. diff.ts owns hunk parsing with quotePath=false; cluster.ts starts each hunk as its own unit and owns the same-file merge; sandbox.ts owns worktree creation and the reverse apply; probes.ts owns the glob-to-file mapping, timeouts and shell execution; verdict.ts owns the baseline comparison and the verdict table; report.ts renders the table and the report@1 JSON. Loadbearing keeps no state beyond its throwaway worktrees and its own output — no daemon, no database, no hosted API. The CLI and the MCP server drive the same pipeline, and the MCP server writes protocol frames to stdout and every diagnostic to stderr.",
+          "zh": "cli.ts 是命令层：解析参数并拥有退出码。diff.ts 拥有带 quotePath=false 的 hunk 解析；cluster.ts 让每个 hunk 起初独立，并拥有同文件合并；sandbox.ts 拥有 worktree 创建与反向应用；probes.ts 拥有 glob 到文件的映射、超时和 shell 执行；verdict.ts 拥有基线与还原结果的比较和判定表；report.ts 渲染表格与 report@1 JSON。除了一次性 worktree 和自己的输出，Loadbearing 不保留状态——没有守护进程、没有数据库、没有托管 API。CLI 和 MCP 服务驱动同一条流水线，MCP 服务只把协议帧写到 stdout，所有诊断写到 stderr。"
+        },
+        "image": {
+          "light": "/assets/architecture-light.svg",
+          "dark": "/assets/architecture-dark.svg",
+          "alt": {
+            "en": "The seven modules of Loadbearing in one Node process, and the three ways out: terminal table, report@1 JSON and the MCP CallToolResult.",
+            "zh": "同一 Node 进程内的 Loadbearing 七个模块，以及三种输出：终端表格、report@1 JSON 和 MCP CallToolResult。"
+          },
+          "mobile": {
+            "light": "/assets/architecture-mobile-light.svg",
+            "dark": "/assets/architecture-mobile-dark.svg"
+          }
+        }
+      },
+      {
+        "title": {
+          "en": "Bounded on purpose",
+          "zh": "边界是写进 schema 的"
+        },
+        "body": {
+          "en": "scope: mapped-probes-only is a field in every report, and it is a limit rather than a guarantee. A droppable verdict means no probe mapped to the cluster's files regressed — not that the code is dead. If the only consumer of a hunk lives in a file with no mapped probe, a caller in another package, a config or an external contract, the cluster can be droppable while its removal still breaks that consumer. v0.1 clusters within one file only and never traces symbol references. Binary files, pure renames, mode-only changes, submodule pointer changes and merge commits are reported unverifiable:unsupported-diff instead of being dropped, so an unjudgeable PR is never presented as clean.",
+          "zh": "scope: mapped-probes-only 写在每一份报告里，它是一条边界，不是保证。droppable 只意味着映射到该集群文件的探针没有一个回退——不意味着代码是死的。如果某个 hunk 的唯一使用者在没有探针映射的文件里——另一个包里的调用方、配置或外部契约——这个集群仍可能被判为可丢弃，但删掉它照样会破坏那个使用者。0.1 只在文件内聚类，从不追踪符号引用。二进制文件、纯重命名、仅权限变更、子模块指针变更和 merge commit 都会返回 unverifiable:unsupported-diff，而不是被丢弃；无法判定的 PR 永远不会被当成干净的。"
+        },
+        "image": {
+          "light": "/assets/scope-light.svg",
+          "dark": "/assets/scope-dark.svg",
+          "alt": {
+            "en": "The mapped-probes-only boundary: CLI, MCP, CI, probe globs, worktree and baseline inside; an unmapped cross-file consumer explicitly outside the claim.",
+            "zh": "mapped-probes-only 的边界：CLI、MCP、CI、探针 glob、worktree 与基线在内部；未映射的跨文件消费者明确在声明之外。"
+          },
+          "mobile": {
+            "light": "/assets/scope-mobile-light.svg",
+            "dark": "/assets/scope-mobile-dark.svg"
+          }
+        }
+      }
+    ],
+    "details": [
+      {
+        "title": {
+          "en": "What is inside the report",
+          "zh": "报告里有什么"
+        },
+        "body": {
+          "en": "Every field is derived from the diff, the config, the probe exit statuses and the repository path; only timestamp-bearing fields are regenerated per run. baseline.ok is true only when every probe passed. Each cluster entry carries its hunk ids, files, verdict, reason, an optional detail, and one evidence object per mapped probe with baselineExitCode and revertedExitCode. A failing probe also carries the last 20 lines of combined stdout/stderr, CRLF normalised. summary.total equals clusters.length and the other counts sum to it.",
+          "zh": "每个字段都来自 diff、配置、探针退出状态和仓库路径；只有带时间戳的字段每次运行重新生成。baseline.ok 仅在所有探针通过时为 true。每个集群条目带 hunk id、文件、判定、原因、可选的 detail，以及每个映射探针的证据对象（含 baselineExitCode 与 revertedExitCode）。失败探针还带合并 stdout/stderr 的最后 20 行（CRLF 已归一化）。summary.total 等于 clusters.length，其余计数之和等于它。"
+        },
+        "code": "{\n  \"schema\": \"loadbearing/report@1\",\n  \"scope\": \"mapped-probes-only\",\n  \"baseline\": { \"ok\": true, \"probes\": [] },\n  \"clusters\": [\n    {\n      \"id\": \"cluster-2\",\n      \"hunkIds\": [\"src/app.js#2\"],\n      \"verdict\": \"necessary\",\n      \"reason\": \"probe-failed\",\n      \"detail\": \"app exited 1 while reverted\",\n      \"probes\": [\n        { \"name\": \"app\", \"run\": \"node test/app.js\", \"baselineExitCode\": 0, \"revertedExitCode\": 1 }\n      ]\n    }\n  ],\n  \"summary\": { \"total\": 6, \"necessary\": 3, \"droppable\": 2, \"unverifiable\": 1 }\n}"
+      },
+      {
+        "title": {
+          "en": "Exit codes you can gate on",
+          "zh": "可以当闸门用的退出码"
+        },
+        "body": {
+          "en": "check exits 0 whenever a report was emitted, even if some verdicts are unverifiable. A dirty tree, unknown base, no shared history or a non-git directory exits 2 before any probe runs. Exit 3 still writes the report. --json changes only the output format, so a CI step can parse the document and decide on summary.droppable while the exit code stays stable.",
+          "zh": "只要输出了报告，check 就以 0 退出，即使有些判定仍是无法判定。工作区不干净、base 不存在、没有共同历史或不是 git 仓库，都会在任何探针运行之前以 2 退出。以 3 退出时报告仍会写出。--json 只改变输出格式，因此 CI 步骤可以解析文档、按 summary.droppable 决策，而退出码保持稳定。"
+        },
+        "code": "0  a report was emitted (verdicts may still be unverifiable)\n1  config or flag error\n2  precondition failure: dirty tree, unknown base, no shared history, or not a git repository\n3  baseline failed; the report is still emitted"
+      },
+      {
+        "title": {
+          "en": "Configuration: probes and globs",
+          "zh": "配置：探针与 glob"
+        },
+        "body": {
+          "en": "loadbearing.yml (or .yml/.yaml) is read from the repository root; --config overrides the path, resolved against the repo root. init writes one probe per package.json script it found, each with broad default globs. Tighten paths until each probe covers the files whose breakage it can actually observe: too broad is slower and more conservative, too narrow produces no-probe and the gate refuses to badge rather than guess. probes[].paths is the only place a probe-to-file mapping is declared.",
+          "zh": "从仓库根目录读取 loadbearing.yml（或 .yaml）；--config 覆盖位置，路径相对仓库根目录解析。init 为找到的每个 package.json 脚本写一个探针，并给每个探针都加上较宽的默认 glob。把 paths 收紧到每个探针真正能观察到破坏的范围：太宽会更慢、更保守；太窄会产生 no-probe，闸门宁可拒绝打标记也不猜。probes[].paths 是声明探针与文件映射的唯一位置。"
+        },
+        "code": "schema: loadbearing/config@1\n\nprobes:\n  - name: test\n    run: npm test\n    paths:\n      - src/**\n      - lib/**\n      - test/**\n      - tests/**\n\n  - name: typecheck\n    run: npm run typecheck\n    paths:\n      - src/**\n      - lib/**\n\nsandbox:\n  setup: npm ci\n\ntimeout: 120"
+      },
+      {
+        "title": {
+          "en": "MCP: the same verdicts inside an agent",
+          "zh": "MCP：把同样的判定交给智能体"
+        },
+        "body": {
+          "en": "loadbearing mcp exposes one tool, loadbearing_check, with the input {base, config?, timeout?}. It returns a CallToolResult: the report JSON in content[0].text and the same object in structuredContent. A bad base returns isError: true instead of crashing the server. The agent gets the verdicts a human sees and can drop the droppable hunks itself, or leave them for the reviewer.",
+          "zh": "loadbearing mcp 暴露一个工具 loadbearing_check，输入是 {base, config?, timeout?}，返回 CallToolResult：报告 JSON 在 content[0].text，同一个对象也在 structuredContent。base 不合法时返回 isError: true，服务端不会崩溃。智能体拿到的判定和人类看到的一样，可以自行删掉可丢弃的 hunk，或留给审查者处理。"
+        },
+        "code": "{\n  \"mcpServers\": {\n    \"loadbearing\": {\n      \"command\": \"loadbearing\",\n      \"args\": [\"mcp\"]\n    }\n  }\n}"
+      },
+      {
+        "title": {
+          "en": "What the fixture does not prove",
+          "zh": "fixture 不能证明什么"
+        },
+        "body": {
+          "en": "The six clusters, two droppable hunks and the mixed exit codes come from a synthetic fixture written to exercise the pipeline: three files, six hunks, two probes with deliberately narrow globs. Those counts say nothing about the rate of unnecessary hunks in real agent pull requests, and the repository publishes no such measurement. The demo proves the code path, the report shape and the badge rules — no more. Re-seeding the fixture changes only the short head SHA in the output.",
+          "zh": "六个集群、两个可丢弃 hunk 和混合退出码，都来自一份为验证流水线而写的合成 fixture：三个文件、六个 hunk、两个 glob 刻意收窄的探针。这些计数不能说明真实智能体 PR 中多余 hunk 的比例，仓库也没有发布过这类测量。Demo 证明的是代码路径、报告形状和标记规则——仅此而已。重新生成 fixture 时，输出里变化的只有短 head SHA。"
+        }
+      }
+    ]
+  },
+  "limitations": [
+    {
+      "en": "Scope is mapped-probes-only. droppable means no probe mapped to this cluster's files regressed; it does not mean the code is dead. A consumer in an unmapped file — another package, a config, an external contract — can still break.",
+      "zh": "边界是 mapped-probes-only。droppable 只意味着映射到该集群文件的探针没有回退，不意味着代码是死的。未映射文件里的使用者——另一个包、配置、外部契约——照样可能被破坏。"
+    },
+    {
+      "en": "It reports, it never edits your branch. Loadbearing does not delete hunks, push a commit, or change the working tree; reverse applies happen only inside throwaway worktrees, which are removed after each cluster, including on failure.",
+      "zh": "只报告，绝不修改你的分支。Loadbearing 不删 hunk、不推提交、不改工作区；反向应用只发生在一次性 worktree 内，每个 worktree 在该集群结束后删除，失败时也一样。"
+    },
+    {
+      "en": "Same-file clustering only. If one hunk will not reverse-apply, the next hunk in that file is merged in. Nothing is clustered across files, and symbol references are never traced.",
+      "zh": "只在文件内合并。单个 hunk 无法反向应用时，会并入同文件的下一个 hunk。不跨文件聚类，也从不追踪符号引用。"
+    },
+    {
+      "en": "Unsupported diffs are reported, not dropped. Binary files, pure renames, mode-only changes and submodule pointer changes become unverifiable:unsupported-diff; a merge commit yields one such marker for the whole diff.",
+      "zh": "不支持的 diff 只报告，不丢弃。二进制文件、纯重命名、仅权限变更和子模块指针变更都会成为 unverifiable:unsupported-diff；merge commit 为整个 diff 生成一个这样的标记。"
+    },
+    {
+      "en": "One run per state. There are no retries, repeat runs or flake detection, so a flaky probe shows up as a flaky verdict.",
+      "zh": "每种状态只跑一次。没有重试、重复运行或 flaky 检测，探针不稳定，判定就不稳定。"
+    },
+    {
+      "en": "Sequential and bounded. Cost is clusters + 1 suite runs; --timeout caps each probe and --max-clusters marks the remainder unverifiable:skipped.",
+      "zh": "串行且有上限。成本是集群数 + 1 次套件运行；--timeout 限制单个探针，--max-clusters 把剩余集群标成 unverifiable:skipped。"
+    },
+    {
+      "en": "No probes, no signal. A repository without probes mapped to its files gets unverifiable:no-probe, not an opinion; the gate degrades to a diff viewer and says so.",
+      "zh": "没有探针就没有信号。仓库没有能映射到文件的探针时，得到 unverifiable:no-probe，而不是意见；此时闸门退化成 diff 查看器，并且会说明这一点。"
+    },
+    {
+      "en": "macOS and Linux only. Windows worktree support is not implemented in 0.1. The package is not on the npm registry yet; 0.1.0 ships as a GitHub Release tarball.",
+      "zh": "只支持 macOS 和 Linux。0.1 没有实现 Windows worktree 支持。包还没有发布到 npm registry；0.1.0 以 GitHub Release tarball 形式发布。"
+    }
+  ],
+  "cta": {
+    "headline": {
+      "en": "Before you approve six hunks,\nask which ones carry the load.",
+      "zh": "批准六个 hunk 之前，\n先问哪些真的承重。"
+    },
+    "sub": {
+      "en": "Run it once on the bundled fixture, then point the same command at your own branch.",
+      "zh": "先在仓库自带的 fixture 上跑一遍，再把同一条命令指向你自己的分支。"
+    },
+    "button": {
+      "en": "Read the source on GitHub",
+      "zh": "在 GitHub 查看源码"
+    }
+  },
+  "footer": {
+    "tag": {
+      "en": "Revert-probe necessity gate, MIT-licensed. One Node process, no model, no server.",
+      "zh": "还原探针必要性闸门，MIT 开源。一个 Node 进程，没有模型，没有服务端。"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 640" width="520" height="640" role="img" aria-labelledby="scopemd-title scopemd-desc" data-palette="e66556-e7b96a-f6acc0-51144c69107b">
+<title id="scopemd-title">Loadbearing verdict scope (narrow)</title>
+<desc id="scopemd-desc">The mapped-probes-only boundary with the report at the centre, CLI, MCP, CI, probe globs, worktree and baseline inside, and an unmapped cross-file consumer explicitly outside the claim.</desc><style>
+text { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif; }
+.mono { font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; }
+@media (prefers-reduced-motion: reduce) { .dash, .pulse { animation: none !important; stroke-dashoffset: 0 !important; } }
+.dash { stroke-dasharray: 5 8; animation: dash 5.5s linear infinite; }
+.pulse { animation: pulse 6s ease-in-out infinite; }
+@keyframes dash { to { stroke-dashoffset: -52; } }
+@keyframes pulse { 0%,100% { opacity: .45 } 50% { opacity: 1 } }
+</style><defs>
+<radialGradient id="scopemd-glow" cx="50%" cy="46%" r="58%">
+  <stop offset="0" stop-color="#e66556" stop-opacity="0.22"/>
+  <stop offset="0.55" stop-color="#e7b96a" stop-opacity="0.06"/>
+  <stop offset="1" stop-color="#0a070d" stop-opacity="0"/>
+</radialGradient>
+<pattern id="scopemd-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+  <path d="M40 0H0V40" fill="none" stroke="#3a1c1d" stroke-width="1" opacity="0.5"/>
+</pattern>
+<marker id="scopemd-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+  <path d="M0 0L10 5L0 10z" fill="#e66556"/>
+</marker>
+</defs>
+<rect width="520" height="640" fill="#0a070d"/>
+<rect width="520" height="640" fill="url(#scopemd-grid)" opacity="0.45"/>
+<rect width="520" height="640" fill="url(#scopemd-glow)"/>
+<text x="32" y="52" font-size="21" font-weight="700" fill="#fdeef2">Bounded on purpose</text><text x="32" y="76" font-size="10.5" fill="#b29fa8">A droppable badge means no mapped probe</text><text x="32" y="93" font-size="10.5" fill="#b29fa8">regressed. It is not a claim that the code is dead.</text><rect x="32" y="116" width="456" height="96" rx="12" fill="#131017" stroke="#e66556" stroke-width="1.2"/><text x="260" y="146" class="mono" font-size="11" text-anchor="middle" fill="#e66556">loadbearing/report@1</text><text x="260" y="174" font-size="15" font-weight="600" text-anchor="middle" fill="#fdeef2">scope: mapped-probes-only</text><text x="260" y="196" font-size="9.5" text-anchor="middle" fill="#b29fa8">same-file clusters · no symbol tracing</text><rect x="32" y="232" width="218" height="42" rx="8" fill="#131017" stroke="#3a1c1d"/><circle cx="48" cy="253" r="3.2" fill="#e66556"/><text x="60" y="249" class="mono" font-size="10.5" fill="#fdeef2">CLI check</text><text x="60" y="264" class="mono" font-size="8.8" fill="#b29fa8">exit 0–3</text><rect x="270" y="232" width="218" height="42" rx="8" fill="#131017" stroke="#3a1c1d"/><circle cx="286" cy="253" r="3.2" fill="#e66556"/><text x="298" y="249" class="mono" font-size="10.5" fill="#fdeef2">MCP tool</text><text x="298" y="264" class="mono" font-size="8.8" fill="#b29fa8">loadbearing_check</text><rect x="32" y="282" width="218" height="42" rx="8" fill="#131017" stroke="#3a1c1d"/><circle cx="48" cy="303" r="3.2" fill="#e66556"/><text x="60" y="299" class="mono" font-size="10.5" fill="#fdeef2">CI gate</text><text x="60" y="314" class="mono" font-size="8.8" fill="#b29fa8">--json</text><rect x="270" y="282" width="218" height="42" rx="8" fill="#131017" stroke="#3a1c1d"/><circle cx="286" cy="303" r="3.2" fill="#e66556"/><text x="298" y="299" class="mono" font-size="10.5" fill="#fdeef2">probe globs</text><text x="298" y="314" class="mono" font-size="8.8" fill="#b29fa8">src/**</text><rect x="32" y="336" width="456" height="34" rx="8" fill="#131017" stroke="#3a1c1d"/><text x="46" y="357" class="mono" font-size="10" fill="#fdeef2">worktree · git apply -R</text><text x="474" y="357" class="mono" font-size="8.5" text-anchor="end" fill="#e66556">inside</text><rect x="32" y="380" width="456" height="34" rx="8" fill="#131017" stroke="#3a1c1d"/><text x="46" y="401" class="mono" font-size="10" fill="#fdeef2">baseline · pristine HEAD</text><text x="474" y="401" class="mono" font-size="8.5" text-anchor="end" fill="#e66556">inside</text><rect x="32" y="436" width="456" height="76" rx="10" fill="#2a1210" stroke="#ff7a6b" stroke-dasharray="6 6"/><text x="50" y="462" font-size="11.5" font-weight="600" fill="#ff7a6b">Outside the claim</text><text x="50" y="482" font-size="9.5" fill="#b29fa8">a consumer in another package, or an</text><text x="50" y="498" font-size="9.5" fill="#b29fa8">unprobed external contract</text><text x="32" y="550" font-size="10" fill="#b29fa8">We report what the probes saw, never more.</text><text x="32" y="568" font-size="10" fill="#b29fa8">Cross-file consumers are a stated v0.1 limitation.</text></svg>

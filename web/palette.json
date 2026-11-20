@@ -1,0 +1,38 @@
+{
+  "mode": "auto",
+  "id": "e66556-e7b96a-f6acc0-51144c69107b",
+  "identity": "https://github.com/supermarioyl/loadbearing",
+  "primary": "#e66556",
+  "secondary": "#e7b96a",
+  "highlight": "#f6acc0",
+  "dark": {
+    "bg": "#0a070d",
+    "panel": "#131017",
+    "code": "#140e13",
+    "ink": "#fdeef2",
+    "muted": "#b29fa8",
+    "line": "#3a1c1d",
+    "primary": "#e66556",
+    "secondary": "#e7b96a",
+    "highlight": "#f6acc0",
+    "accent": "#e66556",
+    "buttonStart": "#c15548",
+    "buttonEnd": "#8f7242",
+    "buttonText": "#ffffff"
+  },
+  "light": {
+    "bg": "#fefaf9",
+    "panel": "#fef7f7",
+    "code": "#fdf4f3",
+    "ink": "#27181c",
+    "muted": "#72616b",
+    "line": "#f7d0cb",
+    "primary": "#b85145",
+    "secondary": "#886d3f",
+    "highlight": "#916571",
+    "accent": "#b85145",
+    "buttonStart": "#c15548",
+    "buttonEnd": "#8f7242",
+    "buttonText": "#ffffff"
+  }
+}
